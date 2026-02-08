@@ -25,27 +25,77 @@ import {
   School,
   Home,
   Campaign,
-  Poll,
+  Groups,
   Login,
   HowToReg,
   Person,
   Close
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleHomeClick = () => {
+    if (location.pathname === '/') {
+      // If already on homepage, scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Otherwise navigate to homepage
+      navigate('/');
+    }
+  };
+
+  const handleAnnouncementsClick = () => {
+    if (location.pathname === '/') {
+      // If on homepage, scroll to announcements section
+      const announcementsSection = document.getElementById('announcements-section');
+      if (announcementsSection) {
+        announcementsSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Otherwise navigate to homepage and then scroll to announcements
+      navigate('/');
+      setTimeout(() => {
+        const announcementsSection = document.getElementById('announcements-section');
+        if (announcementsSection) {
+          announcementsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
+
+  const handleCouncilClick = () => {
+    if (location.pathname === '/') {
+      // If on homepage, scroll to council section
+      const councilSection = document.getElementById('council-section');
+      if (councilSection) {
+        councilSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      // Otherwise navigate to homepage and then scroll to council
+      navigate('/');
+      setTimeout(() => {
+        const councilSection = document.getElementById('council-section');
+        if (councilSection) {
+          councilSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  };
 
   const handleLogin = () => {
     if(!isLoggedIn){
       navigate('/login');
     }
   };
+
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUser(null);
@@ -54,15 +104,34 @@ const Navbar = () => {
   const handleSignUp = () => {
     navigate("/signup");
   };
+
   const navigationItems = [
-    { text: 'Home', icon: <Home />, link: "/" },
-    { text: 'Posts/Announcements', icon: <Campaign />, link: "/" },
-    { text: 'Polls', icon: <Poll /> , link: "/"}
+    { 
+      text: 'Home', 
+      icon: <Home />, 
+      onClick: handleHomeClick,
+      isScroll: false
+    },
+    { 
+      text: 'Announcements', 
+      icon: <Campaign />, 
+      onClick: handleAnnouncementsClick,
+      isScroll: true,
+      sectionId: 'announcements-section'
+    },
+    { 
+      text: 'Meet the Council', 
+      icon: <Groups />, 
+      onClick: handleCouncilClick,
+      isScroll: true,
+      sectionId: 'council-section'
+    }
   ];
 
-  const handleClick = (link) =>{
-    navigate(link);
-  }
+  const handleDrawerItemClick = (item) => {
+    item.onClick();
+    setDrawerOpen(false);
+  };
 
   const toggleDrawer = (open) => () => {
     setDrawerOpen(open);
@@ -89,9 +158,8 @@ const Navbar = () => {
         <List sx={{ flexGrow: 1 }}>
           {navigationItems.map((item) => (
             <ListItemButton
-              button 
               key={item.text}
-              onClick={() => handleClick(item.link)}
+              onClick={() => handleDrawerItemClick(item)}
               sx={{ 
                 borderRadius: 2,
                 mb: 1,
@@ -229,7 +297,8 @@ const Navbar = () => {
     <>
       <AppBar position="sticky" sx={{ 
         bgcolor: 'primary.main',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+        zIndex: theme.zIndex.drawer + 1
       }}>
         <Container maxWidth="lg">
           <Toolbar sx={{ 
@@ -238,10 +307,15 @@ const Navbar = () => {
             px: { xs: 1, sm: 2 }
           }}>
             {/* Left side: Logo and Site Name */}
-            <Box sx={{ 
+            <Box 
+            onClick={() => navigate("/")}
+            sx={{ 
               display: 'flex', 
               alignItems: 'center',
-              gap: 2
+              gap: 2,
+              "&:hover": {
+                cursor: "grab"
+              }
             }}>
               <Box sx={{ 
                 display: 'flex',
@@ -276,7 +350,7 @@ const Navbar = () => {
                     key={item.text}
                     color="inherit"
                     startIcon={item.icon}
-                    onClick={() => handleClick(item.link)}
+                    onClick={item.onClick}
                     sx={{ 
                       fontWeight: 'medium',
                       color: 'white',

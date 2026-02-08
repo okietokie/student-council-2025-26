@@ -23,6 +23,7 @@ import Posts from "./components/logged/Posts.jsx";
 import Polls from "./components/logged/Polls.jsx";
 import Peers from "./components/logged/Peers.jsx";
 import ForbiddenPage from "./components/Forbiddenpage.jsx";
+import JoinCouncil from "./components/JoinCouncil.jsx";
 
 // Extract theme names dynamically
 const themeNames = getThemeNames(themes);
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/login" element={<Login />} />
             <Route path="/logged-in/403" element={<ForbiddenPage /> }/>
+            <Route path="/join-council" element={<JoinCouncil /> }/>
             <Route path="/logged-in/*" element={<ProtectedRoute><LoggedInNavbar /> </ProtectedRoute> } >
               <Route
                 path="home"

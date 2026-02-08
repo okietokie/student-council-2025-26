@@ -70,7 +70,6 @@ export default function Signup() {
     try {
       // Use the correct endpoint for fetching classes
       const response = await axiosClient.get('/classes'); 
-      console.log("Classes response:", response.data);
       
       // Check if response is an array or has a data property
       if (Array.isArray(response.data)) {
@@ -210,7 +209,6 @@ export default function Signup() {
       }else{
         submitData.councilPosition = null;
       }
-      console.log("submit data:", submitData);
       const response = await axiosClient.post(`/auth/register`, submitData, {
         headers: { 'Content-Type': 'application/json' }
       });
@@ -798,7 +796,7 @@ export default function Signup() {
               transition={{ delay: 1.1, duration: 0.5 }}
             >
               <Typography variant="caption" color={theme.palette.text.secondary}>
-                By signing up, you agree to our Terms of Service and Privacy Policy
+                By signing up, YOU(r snacks) BELONG TO US ~council 
               </Typography>
             </motion.div>
           </CardActions>

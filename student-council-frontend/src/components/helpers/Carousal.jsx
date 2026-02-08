@@ -33,7 +33,7 @@ const CouncilMemberCard = ({ member, isActive }) => {
   const getStatusColor = (status) => {
     return status === 'active' ? 'success.main' : 'grey.500';
   };
-
+  const theme = useTheme();
   return (
     <Card
       sx={{
@@ -107,7 +107,7 @@ const CouncilMemberCard = ({ member, isActive }) => {
               color: getStatusColor(member.onlineStatus)
             }} 
           />
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color={theme.palette.primary.main}>
             {member.onlineStatus === 'active' ? 'Online' : 'Offline'}
           </Typography>
         </Box>

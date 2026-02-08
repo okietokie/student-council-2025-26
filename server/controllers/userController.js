@@ -2,6 +2,8 @@ import Class from "../models/class.js";
 import User from "../models/user.js";
 import Poll from "../models/poll.js";
 
+import { r2Client, R2_BUCKET_NAME} from "../config/r2Client.js";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const getUser = async (req, res) => {
     try {
@@ -105,7 +107,10 @@ export const getPeers = async (req, res) => {
       if (currentUser.councilPosition === "CLASS_REP") {
         // Class rep: only show their class
         users = await User.find({
-          className: currentUser.className,
+            $or: [
+              { className: currentUser.className }, // all students in the same class
+              { role: "STUDENT_COUNCIL" }           // all council members
+            ],
           _id: { $ne: currentUser._id }, // exclude self
         }).select("name className councilPosition role approvalStatus admin");
       } else {
@@ -133,3 +138,96 @@ export const getPeers = async (req, res) => {
     });
   }
 };
+
+export const uploadAvatar = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await User.findById(userId);
+
+    
+    // Generate a unique key for R2
+    const avatarKey = `avatar/${userId}/${Date.now()}-${req.file.originalname}`;
+
+    // Upload to R2
+    await r2Client.send(new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: avatarKey,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype
+    }));
+
+    if (user.avatarKey) {
+    await r2Client.send(new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: user.avatarKey,
+    }));
+  }
+
+    const avatarUrl = `${process.env.R2_PUBLIC_DEV_DOMAIN_FOR_AVATAR}/${avatarKey}`;
+    // Update user in DB
+    const updatedUser = await User.findByIdAndUpdate(
+      req.userId,
+      { avatar: avatarUrl },
+      { new: true, select: '-password' }
+    );
+
+    res.status(200).json({
+      success: true,
+      avatarUrl: `${avatarUrl}?v=${Date.now()}`,
+      user: updatedUser
+    });
+  
+
+  } catch (error) {
+    console.error('Upload avatar error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: "Error uploading avatar" 
+    });
+  }
+};
+
+
+export const deleteAvatar = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const user = await User.findById(userId);
+console.log("user: ", user);
+    if (!user || !user.avatarKey) {
+      console.log("user.avatarKey: ", user.avatarKey);
+      return res.status(400).json({
+        success: false,
+        message: "No avatar to delete"
+      });
+    }
+
+    // Delete the avatar from R2
+    await r2Client.send(new DeleteObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: user.avatarKey
+    }));
+
+    // Remove avatar info from DB
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $unset: { avatar: "", avatarKey: "" } },
+      { new: true, select: '-password' }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Avatar deleted successfully",
+      user: updatedUser
+    });
+
+  } catch (error) {
+    console.error("Delete avatar error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error deleting avatar"
+    });
+  }
+};
+

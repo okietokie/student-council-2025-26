@@ -36,18 +36,23 @@ import {
   PersonAdd
 } from '@mui/icons-material';
 import { Outlet, useNavigate } from 'react-router-dom';
+import axiosClient from '../../api/axiosClient';
 
 const Navbar = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggedIn(false);
     setUser(null);
+    const token = localStorage.getItem("token");
+    await axiosClient.patch("/auth/logout", {
+      headers: { Authorization: `Bearer ${token}`}
+    })
     localStorage.removeItem("token");
     navigate("/login")
   };

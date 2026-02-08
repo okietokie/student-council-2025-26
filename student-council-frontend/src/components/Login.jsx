@@ -329,7 +329,7 @@ export default function Login() {
                 style={{ width: '100%', textAlign: 'center' }}
               >
                 <Typography variant="body2" color="text.secondary">
-                  <Link
+                  {/* <Link
                     to="/forgot-password"
                     style={{
                       color: theme.palette.secondary.main,
@@ -345,7 +345,7 @@ export default function Login() {
                     }}
                   >
                     Forgot Password?
-                  </Link>
+                  </Link> */}
                 </Typography>
               </motion.div>
             </CardActions>

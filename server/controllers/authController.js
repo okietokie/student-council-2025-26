@@ -169,3 +169,23 @@ export const loginUser = async (req, res) => {
     });
   }
 };
+
+export const logoutUser = async (req, res) => {
+  try {
+    const userId  = req.user.id;
+    const user = await User.findById(userId);
+
+    if (user){
+          await User.findByIdAndUpdate(userId, 
+      {
+        $set: { onlineStatus: "offline"}
+      }
+    );
+
+    }
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (err) {
+    console.log(`error:`, err);
+    res.status(500).json({ error: err.message });
+  }
+};

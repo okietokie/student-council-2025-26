@@ -55,8 +55,9 @@ import {
 } from '@mui/icons-material';
 import Navbar from './Navbar';
 import { useNavigate } from 'react-router-dom';
-import CouncilCarousel from './helpers/Carousal'; // Assuming you've saved the CouncilCarousel here
+import CouncilCarousel from './helpers/Carousal';
 import axiosClient from '../api/axiosClient';
+import Announcements from './Announcements';
 
 // Main App Component
 const Homepage = () => {
@@ -164,7 +165,10 @@ const Homepage = () => {
                   bgcolor: 'secondary.dark'
                 }
               }}
-              onClick={() => navigate('/announcements')}
+              onClick={() => {
+                const section = document.getElementById('announcements-section');
+                section?.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
               View Announcements
             </Button>
@@ -181,7 +185,7 @@ const Homepage = () => {
                   bgcolor: 'rgba(255,255,255,0.1)'
                 }
               }}
-              onClick={() => navigate('/polls')}
+              onClick={() => navigate('/signup')}
             >
               Participate in Polls
             </Button>
@@ -191,81 +195,46 @@ const Homepage = () => {
     </Box>
   );
 
-  const OfficialAnnouncementsSection = () => (
-    <Box sx={{ py: 8, bgcolor: 'background.default' }}>
-      <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 6 }}>
-          <Box sx={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-            mb: 3
-          }}>
-            <Box sx={{ 
-              p: 1.5,
-              borderRadius: '50%',
-              bgcolor: 'primary.light',
-              color: 'white'
-            }}>
-              <Campaign sx={{ fontSize: 28 }} />
-            </Box>
-            <Typography variant="h3" sx={{ 
-              fontWeight: 'bold',
-              color: 'text.primary'
-            }}>
-              Official Announcements
-            </Typography>
-          </Box>
-          <Typography variant="h6" color="text.secondary" sx={{ 
-            textAlign: 'center', 
-            maxWidth: 600,
-            mb: 4
-          }}>
-            Important updates and official communications from the Student Council
-          </Typography>
-        </Box>
-        
-        <Card sx={{ 
-          p: 4,
-          bgcolor: 'background.paper',
-          border: '2px dashed',
-          borderColor: 'grey.300',
-          borderRadius: 3
+const OfficialAnnouncementsSection = () => (
+  <Box id="announcements-section" sx={{ py: 8, bgcolor: 'background.default' }}>
+    <Container maxWidth="lg">
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 6 }}>
+        <Box sx={{ 
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          mb: 3
         }}>
           <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center',
-            py: 6
+            p: 1.5,
+            borderRadius: '50%',
+            bgcolor: 'primary.light',
+            color: 'white'
           }}>
-            <Campaign sx={{ fontSize: 64, color: 'grey.400', mb: 3 }} />
-            <Typography variant="h5" color="text.secondary" sx={{ mb: 2 }}>
-              No Announcements Currently
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 400 }}>
-              Check back later for important updates and official communications.
-            </Typography>
-            <Button 
-              variant="outlined" 
-              color="primary"
-              onClick={() => navigate('/announcements')}
-              sx={{ 
-                borderWidth: 2,
-                '&:hover': {
-                  borderWidth: 2
-                }
-              }}
-            >
-              Be the first to know when announcements are posted
-            </Button>
+            <Campaign sx={{ fontSize: 28 }} />
           </Box>
-        </Card>
-      </Container>
-    </Box>
-  );
-
+          <Typography variant="h3" sx={{ 
+            fontWeight: 'bold',
+            color: 'text.primary'
+          }}>
+            Campus Polls & Announcements
+          </Typography>
+        </Box>
+        <Typography variant="h6" color="text.secondary" sx={{ 
+          textAlign: 'center', 
+          maxWidth: 600,
+          mb: 4
+        }}>
+          Latest polls and voting results from the Student Council
+        </Typography>
+      </Box>
+      
+      <Announcements />
+    </Container>
+  </Box>
+);
   const StudentCouncilSection = () => (
-    <Box sx={{ py: 8, bgcolor: 'background.paper' }}>
+    <Box id="council-section" sx={{ py: 8, bgcolor: 'background.paper' }}>
       <Container maxWidth="lg">
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 6 }}>
           <Box sx={{ 
@@ -333,18 +302,6 @@ const Homepage = () => {
           gap: 3,
           flexWrap: 'wrap'
         }}>
-          <Button 
-            variant="contained" 
-            color="primary"
-            startIcon={<Groups />}
-            onClick={() => navigate('/council')}
-            sx={{ 
-              px: 4,
-              py: 1.5
-            }}
-          >
-            View All Members
-          </Button>
           <Button 
             variant="outlined" 
             color="primary"
@@ -424,24 +381,6 @@ const Homepage = () => {
       
       <Footer />
       
-      <Fab
-        color="primary"
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          bgcolor: 'primary.main',
-          '&:hover': {
-            bgcolor: 'primary.dark'
-          }
-        }}
-        onClick={() => {
-          setSuccessMsg('Chat with council members feature coming soon!');
-          setTimeout(() => setSuccessMsg(''), 3000);
-        }}
-      >
-        <ChatBubble />
-      </Fab>
       
       {successMsg && (
         <Alert 

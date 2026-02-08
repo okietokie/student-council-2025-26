@@ -5,5 +5,5 @@ import * as classes from '../controllers/classController.js';
 const router = express.Router();
 
 router.get('', classes.getClasses);
-
+router.get('/get-polls', classes.getLatestPolls);
 export default router;

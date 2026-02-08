@@ -82,6 +82,7 @@ function makeTheme(mode, primaryColor, secondaryColor, backgroundColor) {
 
 const themes = {
     // Council Classic - Professional brown theme
+      "leather-dark": makeTheme("dark", "#8B4513", "#654321", "#2C1810"),
   "council-classic-dark": makeTheme("dark", "#5D4037", "#212121", "#1A1A1A"),
   "council-classic-light": makeTheme("light", "#5D4037", "#8D6E63", "#FAFAFA"),
   
@@ -90,7 +91,6 @@ const themes = {
   "academic-brown-light": makeTheme("light", "#795548", "#90A4AE", "#F5F7FA"),
   
   // Leather & Parchment - Traditional aesthetic
-  "leather-dark": makeTheme("dark", "#8B4513", "#654321", "#2C1810"),
   "leather-light": makeTheme("light", "#8B4513", "#DEB887", "#FFF8E1"),
     "midnight-ocean": makeTheme("dark", "#4ABAF2", "#0277BD", "#001829"),
 
