@@ -1,6 +1,6 @@
 // server/controllers/authControllers.js
 import User from "../models/user.js";
-import Class from "../models/Class.js";
+import Class from "../models/class.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import dotenv from 'dotenv';
