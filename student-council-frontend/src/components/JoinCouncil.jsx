@@ -150,7 +150,7 @@ export default function JoinCouncil() {
       icon: <CalendarToday />,
       color: theme.palette.error.main,
       label: "Elections Ended",
-      value: "Last Month",
+      value: "Last Year",
       subtext: "You missed it",
       icon2: <ThumbDown fontSize="small" />
     },
@@ -158,7 +158,7 @@ export default function JoinCouncil() {
       icon: <HourglassEmpty />,
       color: theme.palette.warning.main,
       label: "Next Chance",
-      value: "12 Months",
+      value: "6 Months",
       subtext: "Patience is key",
       icon2: <AccessTime fontSize="small" />
     },
@@ -477,7 +477,15 @@ export default function JoinCouncil() {
                 variant="outlined"
                 color="secondary"
                 startIcon={<EmojiEvents />}
-                onClick={() => navigate('/council')}
+                onClick={() => {
+                  navigate('/');
+                  setTimeout(() => {
+                    const councilSection = document.getElementById('council-section');
+                    if (councilSection) {
+                      councilSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }, 100);
+                }}
                 sx={{ 
                   px: 4,
                   py: 1.5,
