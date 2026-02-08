@@ -1,5 +1,5 @@
 // server/controllers/classController.js
-import Class from "../models/Class.js";
+import Class from "../models/class.js";
 
 export const getClasses = async (req, res) => {
   try {
