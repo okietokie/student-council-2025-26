@@ -1,0 +1,45 @@
+{
+  "name": "student-council-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.32.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource/adlam-display": "^5.2.7",
+    "@fontsource/alkatra": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
+    "@mui/icons-material": "^7.3.7",
+    "@mui/material": "^7.3.7",
+    "@react-three/drei": "^9.27.0",
+    "@react-three/fiber": "^8.18.0",
+    "axios": "^1.13.4",
+    "framer-motion": "^12.33.0",
+    "megajs": "^1.3.9",
+    "next-themes": "^0.4.6",
+    "react-icons": "^5.5.0",
+    "react-router-dom": "^6.22.3",
+    "three": "^0.150.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18",
+    "vite": "^7.2.4"
+  }
+}

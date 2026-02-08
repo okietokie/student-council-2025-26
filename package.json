@@ -1,0 +1,21 @@
+{
+  "name": "student-council",
+  "version": "1.0.0",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js",
+    "frontend": "cd peerCheck-frontend && npm run dev",
+    "dev:all": "concurrently \"nodemon server/server.js\" \"cd student-council-frontend && npm run dev\""
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.7"
+  }
+}
