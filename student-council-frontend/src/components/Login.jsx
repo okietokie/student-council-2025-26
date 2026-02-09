@@ -1,357 +1,265 @@
-// src/Components/Login/Login.jsx
-import { useState, useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardActions,
-  Typography,
-  Button,
-  TextField,
-  CircularProgress,
-  Box,
-  useTheme,
-  alpha,
-} from "@mui/material";
-import { motion } from "framer-motion";
-import Navbar from "./Navbar";
-import axiosClient from "../api/axiosClient";
+import React, { useState } from 'react';
+import { 
+  Layout, 
+  Typography, 
+  Button, 
+  Card, 
+  Form, 
+  Input, 
+  Space,
+  Alert,
+  Divider
+} from 'antd';
+import { 
+  MailOutlined, 
+  LockOutlined, 
+  ArrowRightOutlined,
+  UserAddOutlined,
+  SafetyOutlined
+} from '@ant-design/icons';
+import { useNavigate, Link } from 'react-router-dom';
+import axiosClient from '../api/axiosClient';
+import { COLORS } from '../utils/colors.js';
+import Navbar from '../../src/components/Navbar.jsx';
+
+const { Title, Text } = Typography;
+const { Content } = Layout;
 
 export default function Login() {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [message, setMessage] = useState("");
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
   const navigate = useNavigate();
-  const theme = useTheme();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const onFinish = async (values) => {
     setLoading(true);
+    setMessage('');
+
     try {
-      const res = await axiosClient.post("/auth/login", formData);
+      const res = await axiosClient.post("/auth/login", values);
 
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-      if(res?.data?.success){
-        navigate('/logged-in/home')
+      if (res.data?.token) {
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        
+        if (res.data?.success) {
+          navigate('/logged-in/home');
+        }
       }
-
-      setMessage(res.data.message);
-      setLoading(false);
-
+      
+      setMessage(res.data?.message || 'Login successful');
     } catch (err) {
       setMessage(err.response?.data?.message || "Login failed");
+    } finally {
       setLoading(false);
-      
     }
   };
 
   return (
-    <>
-        <Navbar />
-      <Box
-        sx={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          background: `linear-gradient(135deg, 
-            ${alpha(theme.palette.primary.main, 0.1)} 0%, 
-            ${alpha(theme.palette.secondary.main, 0.1)} 50%, 
-            ${alpha(theme.palette.tertiary?.main || theme.palette.primary.light, 0.1)} 100%)`,
-          px: 2,
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: `radial-gradient(circle at 20% 80%, ${alpha(theme.palette.primary.main, 0.05)} 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, ${alpha(theme.palette.secondary.main, 0.05)} 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, ${alpha(theme.palette.tertiary?.main || theme.palette.secondary.light, 0.03)} 0%, transparent 50%)`,
-            pointerEvents: 'none',
-          }
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: 25, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          style={{ width: "100%", maxWidth: 420 }}
-        >
+    <Layout style={{ 
+      minHeight: '100vh',
+      background: COLORS.background
+    }}>
+      <Navbar />
+      <Content style={{ 
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '24px'
+      }}>
+        <div style={{ 
+          width: '100%',
+          maxWidth: '440px'
+        }}>
+          {/* Header */}
+          <div style={{ 
+            textAlign: 'center',
+            marginBottom: '48px'
+          }}>
+            <Title level={2} style={{ 
+              marginBottom: '8px',
+              color: COLORS.text,
+              fontWeight: 600,
+              letterSpacing: '-0.5px'
+            }}>
+              Student Portal
+            </Title>
+            <Text style={{ 
+              color: `${COLORS.text}80`,
+              fontSize: '16px'
+            }}>
+              Sign in to access your account
+            </Text>
+          </div>
+
           <Card
-            elevation={theme.palette.mode === 'dark' ? 16 : 8}
-            sx={{
-              borderRadius: 4,
-              p: 3,
-              background: theme.palette.mode === 'dark' 
-                ? `linear-gradient(135deg, 
-                    ${alpha(theme.palette.background.paper, 0.95)} 0%, 
-                    ${alpha(theme.palette.background.default, 0.98)} 100%)`
-                : `linear-gradient(135deg, 
-                    ${alpha(theme.palette.background.paper, 0.95)} 0%, 
-                    ${alpha('#ffffff', 0.98)} 100%)`,
-              backdropFilter: 'blur(20px)',
-              border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                height: '4px',
-                background: `linear-gradient(90deg, 
-                  ${theme.palette.primary.main} 0%, 
-                  ${theme.palette.secondary.main} 50%, 
-                  ${theme.palette.tertiary?.main || theme.palette.primary.light} 100%)`,
-                borderRadius: '4px 4px 0 0',
-              }
+            style={{
+              borderRadius: '12px',
+              background: COLORS.surface,
+              border: `1px solid ${COLORS.secondary}20`,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}
+            bodyStyle={{ 
+              padding: '40px'
             }}
           >
-            <CardContent sx={{ position: 'relative', zIndex: 1 }}>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
+            <Form
+              form={form}
+              name="login"
+              onFinish={onFinish}
+              layout="vertical"
+              size="large"
+            >
+              {/* Email Field */}
+              <Form.Item
+                name="email"
+                rules={[
+                  { required: true, message: 'Email address is required' },
+                  { type: 'email', message: 'Please enter a valid email' }
+                ]}
+                style={{ marginBottom: '24px' }}
               >
-                <Typography
-                  variant="h4"
-                  fontWeight="bold"
-                  color="text.primary"
-                  textAlign="center"
-                  gutterBottom
-                  sx={{
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                    backgroundClip: 'text',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    mb: 1
+                <Input
+                  prefix={<MailOutlined style={{ color: `${COLORS.text}60` }} />}
+                  placeholder="Email address"
+                  style={{
+                    borderRadius: '6px',
+                    borderColor: `${COLORS.secondary}30`,
+                    background: 'transparent',
+                    color: COLORS.text,
+                    padding: '10px 14px',
+                    height: '44px'
+                  }}
+                />
+              </Form.Item>
+
+              {/* Password Field */}
+              <Form.Item
+                name="password"
+                rules={[
+                  { required: true, message: 'Password is required' }
+                ]}
+                style={{ marginBottom: '8px' }}
+              >
+                <Input.Password
+                  prefix={<LockOutlined style={{ color: `${COLORS.text}60` }} />}
+                  placeholder="Password"
+                  style={{
+                    borderRadius: '6px',
+                    borderColor: `${COLORS.secondary}30`,
+                    background: 'transparent',
+                    color: COLORS.text,
+                    padding: '10px 14px',
+                    height: '44px'
+                  }}
+                />
+              </Form.Item>
+
+              {/* Forgot Password Link */}
+              <div style={{ 
+                textAlign: 'right',
+                marginBottom: '32px'
+              }}>
+                <Link 
+                  to="/forgot-password" 
+                  style={{ 
+                    color: COLORS.secondary,
+                    fontSize: '14px',
+                    textDecoration: 'none',
+                    fontWeight: 500
                   }}
                 >
-                  Welcome Back!
-                </Typography>
-              </motion.div>
+                  Forgot password?
+                </Link>
+              </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                <Typography
-                  variant="subtitle1"
-                  color="text.secondary"
-                  textAlign="center"
-                  sx={{ mb: 3 }}
-                >
-                  Sign in to continue your learning journey
-                </Typography>
-              </motion.div>
-
-              <form onSubmit={handleLogin}>
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4, duration: 0.5 }}
-                >
-                  <TextField
-                    label="Email Address"
-                    name="email"
-                    type="email"
-                    fullWidth
-                    required
-                    margin="normal"
-                    value={formData.email}
-                    onChange={handleChange}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.3)}`,
-                        }
-                      }
-                    }}
-                  />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5, duration: 0.5 }}
-                >
-                  <TextField
-                    label="Password"
-                    name="password"
-                    type="password"
-                    fullWidth
-                    required
-                    margin="normal"
-                    value={formData.password}
-                    onChange={handleChange}
-                    sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: 2,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                          boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-                        },
-                        '&.Mui-focused': {
-                          boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.3)}`,
-                        }
-                      }
-                    }}
-                  />
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6, duration: 0.5 }}
-                >
-                  <Button
-                    type="submit"
-                    fullWidth
-                    variant="contained"
-                    sx={{
-                      mt: 3,
-                      py: 1.5,
-                      fontWeight: "bold",
-                      borderRadius: 2,
-                      textTransform: "none",
-                      fontSize: '1rem',
-                      background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-                      boxShadow: `0 4px 15px ${alpha(theme.palette.primary.main, 0.3)}`,
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-2px)',
-                        boxShadow: `0 6px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
-                      },
-                      '&:active': {
-                        transform: 'translateY(0)',
-                      }
-                    }}
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <CircularProgress 
-                        size={24} 
-                        color="inherit" 
-                        sx={{ 
-                          color: theme.palette.primary.contrastText 
-                        }} 
-                      />
-                    ) : (
-                      "Login"
-                    )}
-                  </Button>
-                </motion.div>
-              </form>
-
+              {/* Error/Success Message */}
               {message && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Typography
-                    variant="body2"
-                    color="error"
-                    textAlign="center"
-                    sx={{ 
-                      mt: 2,
-                      p: 1.5,
-                      borderRadius: 2,
-                      backgroundColor: alpha(theme.palette.error.main, 0.1),
-                      border: `1px solid ${alpha(theme.palette.error.main, 0.2)}`,
-                    }}
-                  >
-                    {message}
-                  </Typography>
-                </motion.div>
+                <Alert
+                  message={message}
+                  type={message.includes('failed') ? 'error' : 'success'}
+                  showIcon
+                  style={{
+                    marginBottom: '24px',
+                    borderRadius: '6px',
+                    fontSize: '14px'
+                  }}
+                />
               )}
-            </CardContent>
 
-            <CardActions
-              sx={{
-                flexDirection: "column",
-                alignItems: "center",
-                mt: 1,
-                gap: 1,
-                position: 'relative',
-                zIndex: 1,
-              }}
-            >
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8, duration: 0.5 }}
-                style={{ width: '100%', textAlign: 'center' }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  Don't have an account?{" "}
-                  <Link
-                    to="/signup"
-                    style={{
-                      color: theme.palette.primary.main,
-                      fontWeight: "bold",
-                      textDecoration: "none",
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.textShadow = `0 0 8px ${alpha(theme.palette.primary.main, 0.5)}`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.textShadow = 'none';
-                    }}
-                  >
-                    Sign up →
-                  </Link>
-                </Typography>
-              </motion.div>
+              {/* Submit Button */}
+              <Form.Item style={{ marginBottom: 0 }}>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={loading}
+                  block
+                  style={{
+                    height: '46px',
+                    borderRadius: '6px',
+                    background: COLORS.action,
+                    border: 'none',
+                    fontSize: '15px',
+                    fontWeight: 500
+                  }}
+                  icon={<ArrowRightOutlined />}
+                  iconPosition="end"
+                >
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </Button>
+              </Form.Item>
+            </Form>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.9, duration: 0.5 }}
-                style={{ width: '100%', textAlign: 'center' }}
-              >
-                <Typography variant="body2" color="text.secondary">
-                  {/* <Link
-                    to="/forgot-password"
-                    style={{
-                      color: theme.palette.secondary.main,
-                      fontWeight: "bold",
-                      textDecoration: "none",
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.textShadow = `0 0 8px ${alpha(theme.palette.secondary.main, 0.5)}`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.textShadow = 'none';
-                    }}
-                  >
-                    Forgot Password?
-                  </Link> */}
-                </Typography>
-              </motion.div>
-            </CardActions>
+            {/* Divider */}
+            <Divider style={{ 
+              borderColor: `${COLORS.secondary}15`,
+              color: `${COLORS.text}50`,
+              fontSize: '12px',
+              margin: '32px 0'
+            }}>
+              OR
+            </Divider>
+
+            {/* Sign Up Section */}
+            <div style={{ textAlign: 'center' }}>
+              <Text style={{ 
+                color: `${COLORS.text}70`,
+                fontSize: '14px',
+                display: 'block',
+                marginBottom: '16px'
+              }}>
+                Don't have an account?
+              </Text>
+              
+              <Link to="/signup">
+                <Button
+                  type="default"
+                  block
+                  style={{
+                    height: '42px',
+                    borderRadius: '6px',
+                    borderColor: `${COLORS.secondary}40`,
+                    color: COLORS.secondary,
+                    fontWeight: 500,
+                    background: 'transparent'
+                  }}
+                >
+                  Create new account
+                </Button>
+              </Link>
+            </div>
           </Card>
-        </motion.div>
-      </Box>
-    </>
+
+          {/* Security Footer */}
+          <div style={{ 
+            marginTop: '32px',
+            textAlign: 'center'
+          }}>
+            <Space size={8} align="center">
+            </Space>
+          </div>
+        </div>
+      </Content>
+    </Layout>
   );
 }

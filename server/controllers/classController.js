@@ -1,6 +1,8 @@
 // server/controllers/classController.js
 import Class from "../models/class.js";
+import Events from "../models/events.js";
 import Poll from "../models/poll.js";
+import User from "../models/user.js";
 
 export const getLatestPolls = async (req, res) => {
   try {
@@ -58,6 +60,37 @@ export const getClasses = async (req, res) => {
     res.status(500).json({ 
       message: "Error fetching classes",
       error: error.message 
+    });
+  }
+};
+
+export const getActiveStats = async (req, res) => {
+  try {
+    // Count all active users (students + council)
+    const activeUsersCount = await User.countDocuments();
+
+    // Count active polls
+    const activePollsCount = await Poll.countDocuments({
+      isActive: true,
+    });
+    const activeEventCount = await Events.countDocuments({status: "COMPLETED"})
+    console.log("activePollsCount:", activePollsCount);
+
+    res.status(200).json({
+      success: true,
+      stats: {
+        activeUsers: activeUsersCount,
+        activePolls: activePollsCount,
+        activeEvents: activeEventCount
+      },
+      message: "Active stats fetched successfully",
+    });
+  } catch (error) {
+    console.error("Error fetching active stats:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching active statistics",
+      error: error.message,
     });
   }
 };

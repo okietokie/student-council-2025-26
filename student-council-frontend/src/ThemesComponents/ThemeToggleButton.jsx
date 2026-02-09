@@ -1,85 +1,120 @@
 // Components/ThemesComponents/ThemeToggleButton.jsx
-import { Box, IconButton, Tooltip, Fade, alpha } from "@mui/material";
-import { Palette, Close } from "@mui/icons-material";
+import { useState } from 'react';
+import { FloatButton, Tooltip, Tag, Space } from 'antd';
+import { 
+  BgColorsOutlined, 
+  CloseOutlined,
+  CheckCircleOutlined, 
+} from '@ant-design/icons';
 
-const ThemeToggleButton = ({ theme, onClick, isPickerOpen = false }) => {
+const ThemeToggleButton = ({ 
+  onClick, 
+  isPickerOpen = false, 
+  currentThemeName 
+}) => {
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+
+  // Format theme name for display
+  const formatThemeName = (name) => {
+    return name
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, l => l.toUpperCase())
+      .replace(/Hc/g, "High Contrast")
+      .replace(/Mc/g, "Medium Contrast");
+  };
+
   return (
-    <Fade in timeout={300}>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 1000,
-          '&:hover': {
-            '& .theme-toggle-tooltip': {
-              opacity: 1,
-              transform: 'translateX(0)',
-            }
-          }
-        }}
-      >
-        {/* Tooltip with animation */}
-        <Box
-          className="theme-toggle-tooltip"
-          sx={{
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 24,
+        right: 24,
+        zIndex: 1000,
+      }}
+      onMouseEnter={() => setTooltipVisible(true)}
+      onMouseLeave={() => setTooltipVisible(false)}
+    >
+      {/* Tooltip */}
+      {tooltipVisible && (
+        <div
+          style={{
             position: 'absolute',
-            right: 'calc(100% + 10px)',
+            right: 'calc(100% + 12px)',
             top: '50%',
-            transform: 'translateY(-50%) translateX(-10px)',
-            opacity: 0,
-            transition: 'all 0.3s ease',
+            transform: 'translateY(-50%)',
+            opacity: tooltipVisible ? 1 : 0,
+            transition: 'opacity 0.3s ease',
             pointerEvents: 'none',
+            zIndex: 1001,
           }}
         >
-          <Box sx={{
-            backgroundColor: theme.palette.background.paper,
-            color: theme.palette.text.primary,
-            padding: '4px 12px',
-            borderRadius: 2,
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            boxShadow: `0 2px 8px ${alpha(theme.palette.common.black, 0.1)}`,
-            whiteSpace: 'nowrap',
-            border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-          }}>
-            {isPickerOpen ? 'Close Theme Picker' : 'Change Theme'}
-          </Box>
-        </Box>
+          <div
+            style={{
+              backgroundColor: 'var(--ant-color-bg-container)',
+              color: 'var(--ant-color-text)',
+              padding: '8px 16px',
+              borderRadius: '12px',
+              fontSize: '14px',
+              fontWeight: 500,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              whiteSpace: 'nowrap',
+              border: '1px solid var(--ant-color-border)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            {isPickerOpen ? (
+              <>
+                <CloseOutlined style={{ fontSize: '12px' }} />
+                Close Theme Picker
+              </>
+            ) : (
+              <>
+                <BgColorsOutlined style={{ fontSize: '12px' }} />
+                Change Theme
+              </>
+            )}
+            {currentThemeName && (
+              <Tag 
+                color="processing" 
+                style={{ 
+                  marginLeft: '8px',
+                  fontSize: '10px',
+                  padding: '0 6px',
+                  lineHeight: '16px'
+                }}
+              >
+                {formatThemeName(currentThemeName)}
+              </Tag>
+            )}
+          </div>
+        </div>
+      )}
 
-        <IconButton
+      {/* Floating Button */}
+      <Tooltip
+        title={isPickerOpen ? "Close Theme Picker" : "Change Theme"}
+        placement="left"
+        open={tooltipVisible}
+        onOpenChange={setTooltipVisible}
+      >
+        <FloatButton
+          type={isPickerOpen ? "default" : "primary"}
+          icon={isPickerOpen ? <CloseOutlined /> : <BgColorsOutlined />}
           onClick={onClick}
-          sx={{
-            backgroundColor: isPickerOpen 
-              ? theme.palette.error.main 
-              : theme.palette.primary.main,
-            color: theme.palette.primary.contrastText,
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            boxShadow: isPickerOpen
-              ? `0 4px 20px ${alpha(theme.palette.error.main, 0.3)}`
-              : `0 4px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+          style={{
+            width: '56px',
+            height: '56px',
+            boxShadow: isPickerOpen 
+              ? '0 4px 20px rgba(239, 68, 68, 0.3)' 
+              : '0 4px 20px rgba(24, 144, 255, 0.3)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover': {
-              backgroundColor: isPickerOpen 
-                ? theme.palette.error.dark 
-                : theme.palette.primary.dark,
-              transform: 'scale(1.1)',
-              boxShadow: isPickerOpen
-                ? `0 8px 32px ${alpha(theme.palette.error.main, 0.4)}`
-                : `0 8px 32px ${alpha(theme.palette.primary.main, 0.4)}`,
-            },
           }}
-        >
-          {isPickerOpen ? (
-            <Close sx={{ fontSize: 24 }} />
-          ) : (
-            <Palette sx={{ fontSize: 24 }} />
-          )}
-        </IconButton>
-      </Box>
-    </Fade>
+          className="theme-toggle-button"
+        />
+      </Tooltip>
+    </div>
   );
 };
 

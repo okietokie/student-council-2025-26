@@ -1,208 +1,214 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  IconButton,
-  Avatar,
-  Chip,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
-import {
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
-  Circle as CircleIcon
-} from '@mui/icons-material';
+import React, { useState, useRef } from 'react';
+import { Card, Avatar, Typography, Button, Space, Row, Col, Grid } from 'antd';
+import { LeftOutlined, RightOutlined, CrownOutlined, UserOutlined } from '@ant-design/icons';
+import { COLORS } from '../../utils/colors.js';
+
+const { Title, Text, Paragraph } = Typography;
+const { useBreakpoint } = Grid;
 
 const CouncilMemberCard = ({ member, isActive }) => {
-  const getPositionColor = (position) => {
+  const getPositionColor = () => {
     const positionColors = {
-      'CHAIRPERSON': 'primary.main',
-      'CLASS_REP': 'secondary.main',
-      'SPORTS_SECRETARY': 'success.main',
-      'CULTURAL_SECRETARY': 'warning.main',
-      'TREASURER': 'info.main',
-      'SECRETARY': 'error.main',
-      'VICE_CHAIRPERSON': 'primary.light'
+      'CHAIRPERSON': '#FF6B6B',
+      'VICE_CHAIRPERSON': '#4ECDC4',
+      'SECRETARY': '#45B7D1',
+      'TREASURER': '#96CEB4',
+      'SPORTS_SECRETARY': '#FFEAA7',
+      'CULTURAL_SECRETARY': '#DDA0DD',
+      'CLASS_REP': '#98D8C8'
     };
-    return positionColors[position] || 'grey.500';
+    return positionColors[member.councilPosition] || COLORS.secondary;
   };
 
-  const getStatusColor = (status) => {
-    return status === 'active' ? 'success.main' : 'grey.500';
+  const getStatusColor = () => {
+    return member.onlineStatus === 'active' ? '#52c41a' : '#8c8c8c';
   };
-  const theme = useTheme();
+
+  const positionColor = getPositionColor();
+
   return (
     <Card
-      sx={{
-        minWidth: isActive ? 320 : 240,
-        maxWidth: isActive ? 320 : 240,
-        height: isActive ? 420 : 340,
+      style={{
+        minWidth: isActive ? 300 : 240,
+        maxWidth: isActive ? 300 : 240,
+        height: isActive ? 400 : 340,
         transition: 'all 0.3s ease',
-        transform: isActive ? 'scale(1.05)' : 'scale(0.85)',
+        transform: isActive ? 'scale(1.05)' : 'scale(0.9)',
         opacity: isActive ? 1 : 0.7,
-        margin: isActive ? '0 16px' : '0 8px',
-        boxShadow: isActive ? 8 : 2,
-        display: 'flex',
-        flexDirection: 'column',
-        borderRadius: 3,
-        overflow: 'visible'
+        margin: '0 12px',
+        borderRadius: 16,
+        border: `1px solid ${COLORS.secondary}30`,
+        background: COLORS.surface,
+        color: COLORS.text,
+        overflow: 'hidden',
+        boxShadow: isActive 
+          ? `0 8px 32px rgba(0,0,0,0.15)` 
+          : `0 4px 16px rgba(0,0,0,0.1)`
       }}
+      bodyStyle={{ padding: 0, height: '100%' }}
     >
-      <Box
-        sx={{
-          height: isActive ? 200 : 160,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          bgcolor: 'primary.light',
-          borderTopLeftRadius: 3,
-          borderTopRightRadius: 3,
-          position: 'relative',
-          overflow: 'hidden'
-        }}
-      >
-        {member.avatar ? (
-          <Avatar
-            src={member.avatar}
-            sx={{
-              width: isActive ? 120 : 100,
-              height: isActive ? 120 : 100,
-              border: '4px solid white'
-            }}
-          />
-        ) : (
-          <Avatar
-            sx={{
-              width: isActive ? 120 : 100,
-              height: isActive ? 120 : 100,
-              bgcolor: 'primary.main',
-              fontSize: isActive ? '3rem' : '2.5rem',
-              border: '4px solid white'
-            }}
-          >
-            {member.name?.charAt(0) || '?'}
-          </Avatar>
-        )}
-        
-        <Box
-          sx={{
-            position: 'absolute',
-            bottom: 16,
-            right: 16,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            bgcolor: 'rgba(255, 255, 255, 0.9)',
-            px: 1.5,
-            py: 0.5,
-            borderRadius: 20
+      {/* Header with avatar */}
+      <div style={{
+        height: isActive ? 200 : 160,
+        background: `linear-gradient(135deg, ${positionColor}40, ${COLORS.secondary}20)`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+        padding: '20px'
+      }}>
+        <Avatar
+          size={isActive ? 120 : 100}
+          src={member.avatar}
+          icon={!member.avatar && <UserOutlined />}
+          style={{
+            border: `4px solid ${COLORS.background}`,
+            background: positionColor,
+            fontSize: isActive ? '40px' : '32px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
           }}
         >
-          <CircleIcon 
-            sx={{ 
-              fontSize: 12,
-              color: getStatusColor(member.onlineStatus)
-            }} 
-          />
-          <Typography variant="caption" color={theme.palette.primary.main}>
+          {!member.avatar && member.name?.charAt(0)}
+        </Avatar>
+        
+        {/* Online status badge */}
+        <div style={{
+          position: 'absolute',
+          bottom: 16,
+          right: 16,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: `${COLORS.background}CC`,
+          padding: '6px 12px',
+          borderRadius: '20px',
+          backdropFilter: 'blur(10px)',
+          border: `1px solid ${COLORS.secondary}30`
+        }}>
+          <div style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: getStatusColor()
+          }} />
+          <Text style={{ 
+            fontSize: '12px',
+            color: COLORS.text,
+            fontWeight: 500
+          }}>
             {member.onlineStatus === 'active' ? 'Online' : 'Offline'}
-          </Typography>
-        </Box>
-      </Box>
+          </Text>
+        </div>
+      </div>
 
-      <CardContent sx={{ 
-        flexGrow: 1, 
-        textAlign: 'center',
+      {/* Content */}
+      <div style={{ 
+        padding: '24px',
+        height: 'calc(100% - 200px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center'
       }}>
-        <Chip
-          label={member.councilPosition?.replace(/_/g, ' ') || 'Member'}
-          size="small"
-          sx={{
-            bgcolor: getPositionColor(member.councilPosition),
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '0.75rem',
-            mb: 2
-          }}
-        />
+        {/* Position badge */}
+        <div style={{
+          background: positionColor,
+          color: '#fff',
+          padding: '4px 12px',
+          borderRadius: '20px',
+          fontSize: '12px',
+          fontWeight: 600,
+          marginBottom: '16px',
+          letterSpacing: '0.5px'
+        }}>
+          {member.councilPosition?.replace(/_/g, ' ') || 'Council Member'}
+        </div>
 
-        <Typography 
-          variant="h5" 
-          component="div"
-          sx={{ 
-            fontWeight: 700,
-            mb: 1,
-            fontSize: isActive ? '1.5rem' : '1.25rem'
+        {/* Name */}
+        <Title 
+          level={4} 
+          style={{ 
+            margin: '0 0 8px 0',
+            color: COLORS.text,
+            fontWeight: 600,
+            fontSize: isActive ? '20px' : '18px'
           }}
         >
           {member.name}
-        </Typography>
+        </Title>
 
+        {/* Class */}
         {member.className && (
-          <Typography 
-            variant="subtitle1" 
-            color="text.secondary"
-            sx={{ 
-              fontWeight: 500,
-              mb: 1
-            }}
-          >
+          <Text style={{ 
+            color: `${COLORS.text}CC`,
+            fontSize: '14px',
+            fontWeight: 500,
+            marginBottom: '12px'
+          }}>
             {member.className}
-          </Typography>
+          </Text>
         )}
 
-        <Typography 
-          variant="body2" 
-          color="text.secondary"
-          sx={{
+        {/* Email
+        <Paragraph 
+          style={{ 
+            margin: '12px 0 0 0',
+            color: `${COLORS.text}99`,
+            fontSize: '13px',
+            fontStyle: 'italic',
+            lineHeight: 1.4,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
             display: '-webkit-box',
             WebkitLineClamp: isActive ? 2 : 1,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            fontStyle: 'italic',
-            mt: 1
+            WebkitBoxOrient: 'vertical'
           }}
         >
           {member.email}
-        </Typography>
-      </CardContent>
+        </Paragraph> */}
+      </div>
     </Card>
   );
 };
 
 const CouncilCarousel = ({ members = [] }) => {
   const [activeIndex, setActiveIndex] = useState(0);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const screens = useBreakpoint();
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   const handleNext = () => {
-    setActiveIndex((prevIndex) => 
-      prevIndex === members.length - 1 ? 0 : prevIndex + 1
+    setActiveIndex(prev => 
+      prev === members.length - 1 ? 0 : prev + 1
     );
   };
 
   const handlePrev = () => {
-    setActiveIndex((prevIndex) => 
-      prevIndex === 0 ? members.length - 1 : prevIndex - 1
+    setActiveIndex(prev => 
+      prev === 0 ? members.length - 1 : prev - 1
     );
   };
 
-  const handleSwipe = (direction) => {
-    if (direction === 'left') {
-      handleNext();
-    } else if (direction === 'right') {
-      handlePrev();
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX.current;
+    
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        handleNext(); // Swipe left
+      } else {
+        handlePrev(); // Swipe right
+      }
     }
   };
 
   const getVisibleItems = () => {
-    const itemsToShow = isMobile ? 1 : Math.min(3, members.length);
+    const itemsToShow = screens.xs ? 1 : Math.min(3, members.length);
     const result = [];
     
     for (let i = -Math.floor(itemsToShow / 2); i <= Math.floor(itemsToShow / 2); i++) {
@@ -219,144 +225,189 @@ const CouncilCarousel = ({ members = [] }) => {
 
   if (members.length === 0) {
     return (
-      <Box sx={{ textAlign: 'center', py: 8 }}>
-        <Typography variant="h6" color="text.secondary">
-          No council members to display
-        </Typography>
-      </Box>
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '60px 0',
+        background: COLORS.surface,
+        borderRadius: '16px',
+        border: `1px dashed ${COLORS.secondary}30`
+      }}>
+        <CrownOutlined style={{ 
+          fontSize: '48px', 
+          color: `${COLORS.secondary}50`,
+          marginBottom: '16px'
+        }} />
+        <Title level={4} style={{ color: `${COLORS.text}CC`, marginBottom: '8px' }}>
+          No Council Members
+        </Title>
+        <Text style={{ color: `${COLORS.text}99` }}>
+          Council positions will be announced soon
+        </Text>
+      </div>
     );
   }
 
+  const visibleItems = getVisibleItems();
+
   return (
-    <Box sx={{ 
+    <div style={{ 
       width: '100%',
-      maxWidth: 'lg',
-      mx: 'auto',
-      px: 2,
+      maxWidth: '1140px',
+      margin: '0 auto',
+      padding: screens.xs ? '0 20px' : '0 30px',
       position: 'relative'
     }}>
-      <Box
-        sx={{
+      <div 
+        style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          minHeight: 500,
-          position: 'relative',
-          overflow: 'hidden'
+          minHeight: 480,
+          position: 'relative'
         }}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {members.length > 1 && (
+        {/* Navigation buttons */}
+        {members.length > 1 && !screens.xs && (
           <>
-            <IconButton
+            <Button
+              type="text"
+              icon={<LeftOutlined />}
               onClick={handlePrev}
-              sx={{
+              style={{
                 position: 'absolute',
-                left: 0,
+                left: '-40px',
                 zIndex: 10,
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                '&:hover': {
-                  bgcolor: 'background.default'
-                }
+                width: '48px',
+                height: '48px',
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                color: COLORS.text,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                fontSize: '20px'
               }}
-            >
-              <ChevronLeftIcon />
-            </IconButton>
-
-            <IconButton
+            />
+            
+            <Button
+              type="text"
+              icon={<RightOutlined />}
               onClick={handleNext}
-              sx={{
+              style={{
                 position: 'absolute',
-                right: 0,
+                right: '-40px',
                 zIndex: 10,
-                bgcolor: 'background.paper',
-                boxShadow: 3,
-                '&:hover': {
-                  bgcolor: 'background.default'
-                }
+                width: '48px',
+                height: '48px',
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                color: COLORS.text,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                fontSize: '20px'
               }}
-            >
-              <ChevronRightIcon />
-            </IconButton>
+            />
           </>
         )}
 
-        <Box
-          sx={{
+        {/* Mobile navigation */}
+        {members.length > 1 && screens.xs && (
+          <div style={{
+            position: 'absolute',
+            top: '-60px',
+            right: '0',
+            zIndex: 10,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'transform 0.3s ease',
-            touchAction: 'pan-y',
-            userSelect: 'none'
-          }}
-          onTouchStart={(e) => {
-            const touchStartX = e.touches[0].clientX;
-            const handleTouchEnd = (e) => {
-              const touchEndX = e.changedTouches[0].clientX;
-              const diff = touchStartX - touchEndX;
-              if (Math.abs(diff) > 50) {
-                if (diff > 0) {
-                  handleSwipe('left');
-                } else {
-                  handleSwipe('right');
-                }
-              }
-              document.removeEventListener('touchend', handleTouchEnd);
-            };
-            document.addEventListener('touchend', handleTouchEnd);
-          }}
-        >
-          {getVisibleItems().map(({ member, index, isActive }) => (
+            gap: '12px'
+          }}>
+            <Button
+              type="text"
+              icon={<LeftOutlined />}
+              onClick={handlePrev}
+              style={{
+                width: '40px',
+                height: '40px',
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                color: COLORS.text
+              }}
+            />
+            
+            <Button
+              type="text"
+              icon={<RightOutlined />}
+              onClick={handleNext}
+              style={{
+                width: '40px',
+                height: '40px',
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                color: COLORS.text
+              }}
+            />
+          </div>
+        )}
+
+        {/* Carousel items */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'transform 0.3s ease'
+        }}>
+          {visibleItems.map(({ member, index, isActive }) => (
             <CouncilMemberCard
               key={index}
               member={member}
               isActive={isActive}
             />
           ))}
-        </Box>
-      </Box>
+        </div>
+      </div>
 
+      {/* Dots indicator */}
       {members.length > 1 && (
-        <>
-          <Box sx={{ 
+        <div style={{ 
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '24px',
+          marginTop: '40px'
+        }}>
+          <div style={{ 
             display: 'flex',
             justifyContent: 'center',
-            gap: 1,
-            mt: 3
+            gap: '8px',
+            flex: 1
           }}>
             {members.map((_, index) => (
-              <Box
+              <button
                 key={index}
                 onClick={() => setActiveIndex(index)}
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: '50%',
-                  bgcolor: activeIndex === index ? 'primary.main' : 'grey.400',
+                style={{
+                  width: activeIndex === index ? '24px' : '12px',
+                  height: '12px',
+                  borderRadius: '6px',
+                  background: activeIndex === index ? COLORS.secondary : `${COLORS.secondary}40`,
+                  border: 'none',
                   cursor: 'pointer',
-                  transition: 'background-color 0.3s ease',
-                  '&:hover': {
-                    bgcolor: activeIndex === index ? 'primary.dark' : 'grey.500'
-                  }
+                  transition: 'all 0.3s ease',
+                  padding: 0
                 }}
               />
             ))}
-          </Box>
-
-          <Typography 
-            variant="body2" 
-            color="text.secondary" 
-            sx={{ 
-              textAlign: 'center', 
-              mt: 2 
-            }}
-          >
+          </div>
+          
+          <Text style={{ 
+            color: `${COLORS.text}80`,
+            fontSize: '14px',
+            minWidth: '60px',
+            textAlign: 'center'
+          }}>
             {activeIndex + 1} / {members.length}
-          </Typography>
-        </>
+          </Text>
+        </div>
       )}
-    </Box>
+    </div>
   );
 };
 

@@ -7,93 +7,87 @@ import dotenv from 'dotenv';
 import path from 'path';
 dotenv.config({ path: path.resolve('./server/.env') });
 
+import { sendEmail } from "./utilsEmail.js";
+
 export const registerUser = async (req, res) => {
   try {
     const { name, email, password, role, className, councilPosition } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !className) {
-      return res.status(400).json({ 
-        message: "Name, email, password, and class are required" 
-      });
+      return res.status(400).json({ message: "Name, email, password, and class are required" });
     }
 
-    console.log("name: ", name);
-        console.log("email: ", email);
-            console.log("classname: ", className);
-                console.log("role: ", role);
-    // Check if class exists
-    const classExists = await Class.findOne({className});
-    if (!classExists) {
-      return res.status(400).json({ 
-        message: "Selected class does not exist" 
-      });
-    }
+    const classExists = await Class.findOne({ className });
+    if (!classExists) return res.status(400).json({ message: "Selected class does not exist" });
 
-    // Check if user exists by email
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ 
-        message: "Email already exists! Try logging in!" 
-      });
-    }
+    if (existingUser) return res.status(400).json({ message: "Email already exists! Try logging in!" });
 
-    // Validate council position based on role
     if (role === "STUDENT_COUNCIL" && !councilPosition) {
-      return res.status(400).json({ 
-        message: "Council position is required for student council members" 
-      });
+      return res.status(400).json({ message: "Council position is required for student council members" });
     }
-
     if (role !== "STUDENT_COUNCIL" && councilPosition) {
-      return res.status(400).json({ 
-        message: "Council position is only allowed for student council members" 
-      });
+      return res.status(400).json({ message: "Council position is only allowed for student council members" });
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
-    const user = new User({ 
-      name, 
-      email, 
-      password: hashedPassword, 
+    const user = new User({
+      name,
+      email,
+      password: hashedPassword,
       role,
       className,
       councilPosition: role === "STUDENT_COUNCIL" ? councilPosition : null,
-      approvalStatus: "PENDING" // Students auto-approved
+      approvalStatus: "PENDING",
     });
 
     await user.save();
 
-    res.status(201).json({ 
-      message: "User registered successfully", 
+    // ✅ Fetch all admins
+    const admins = await User.find({ admin: true }).select("email");
+    const adminEmails = admins.map(a => a.email);
+
+    // Send email to all admins
+    if (adminEmails.length > 0) {
+      try {
+        await sendEmail({
+          to: adminEmails, // array of emails
+          subject: "New User Registered",
+          text: `A new user has signed up:\n\nName: ${name}\nEmail: ${email}\nClass: ${className}\nRole: ${role}\nCouncil Position: ${councilPosition || "N/A"}`,
+          html: `<p>A new user has signed up:</p>
+                 <ul>
+                   <li><b>Name:</b> ${name}</li>
+                   <li><b>Email:</b> ${email}</li>
+                   <li><b>Class:</b> ${className}</li>
+                   <li><b>Role:</b> ${role}</li>
+                   <li><b>Council Position:</b> ${councilPosition || "N/A"}</li>
+                 </ul>`
+        });
+      } catch (err) {
+        console.error("Failed to send email to admins:", err);
+      }
+    }
+
+    res.status(201).json({
+      message: "User registered successfully",
       userId: user._id,
       approvalStatus: user.approvalStatus
     });
 
   } catch (error) {
     console.error("Registration error:", error);
-    
-    if (error.name === 'ValidationError') {
+
+    if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map(err => err.message);
-      return res.status(400).json({ 
-        message: "Validation failed", 
-        errors: messages 
-      });
+      return res.status(400).json({ message: "Validation failed", errors: messages });
     }
 
     if (error.code === 11000) {
-      return res.status(400).json({ 
-        message: "Email already exists" 
-      });
+      return res.status(400).json({ message: "Email already exists" });
     }
 
-    res.status(500).json({ 
-      message: "Server error during registration",
-      error: error.message 
-    });
+    res.status(500).json({ message: "Server error during registration", error: error.message });
   }
 };
 

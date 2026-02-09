@@ -1,48 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box, Typography, Card, CardContent, Avatar, Button,
-  Chip, Stack, CircularProgress, Alert,
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  Tabs, Tab, Badge, Divider, Tooltip, IconButton,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
+  Card,
+  Typography,
+  Button,
+  Avatar,
+  Tag,
+  Table,
+  Tabs,
+  Badge,
+  Alert,
+  Modal,
+  message,
+  Row,
+  Col,
+  Space,
+  Divider,
+  Tooltip,
+  Dropdown,
+  Menu,
+  Spin,
+  Statistic,
+  Grid,
+  List,
+  Drawer
+} from 'antd';
 import {
-  CheckCircle, Cancel, Person, Groups, HowToReg,
-  PersonAdd, Warning, School, AdminPanelSettings,
-  PendingActions, VerifiedUser, Block,
-  Delete, Security, Shield, PersonRemove,
-  KeyOff, Key, Star, StarBorder
-} from '@mui/icons-material';
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  UserOutlined,
+  TeamOutlined,
+  UserAddOutlined,
+  WarningOutlined,
+  ReadOutlined ,
+  SecurityScanOutlined,
+  ClockCircleOutlined,
+  SafetyCertificateOutlined,
+  StopOutlined,
+  DeleteOutlined,
+  SafetyOutlined,
+  UserDeleteOutlined,
+  KeyOutlined,
+  StarOutlined,
+  StarFilled,
+  MoreOutlined,
+  GroupOutlined,
+  InfoCircleOutlined,
+  MenuOutlined,
+  MobileOutlined,
+  TabletOutlined,
+  DesktopOutlined
+} from '@ant-design/icons';
 import axiosClient from '../../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
 
-function TabPanel(props) {
-  const { children, value, index, ...other } = props;
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
-    </div>
-  );
-}
+const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
+const { useBreakpoint } = Grid;
+
+// Custom palette from your criteria
+const palette = {
+  mainBg: '#12181B',
+  surface: '#1E262C',
+  secondary: '#2D93AD',
+  text: '#F4D8CD',
+  action: '#F15152'
+};
 
 export default function Peers() {
-  const theme = useTheme();
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState('pending');
   const [peers, setPeers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [userData, setUserData] = useState(null);
-  const [actionDialog, setActionDialog] = useState({ open: false, user: null, action: '', title: '', message: '' });
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalConfig, setModalConfig] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
+  const [mobileDrawerVisible, setMobileDrawerVisible] = useState(false);
+  const [mobileActionUser, setMobileActionUser] = useState(null);
+  
   const navigate = useNavigate();
+  const screens = useBreakpoint();
+
+  // Responsive settings
+  const isMobile = !screens.md;
+  const isTablet = screens.md && !screens.lg;
+  const isDesktop = screens.lg;
 
   // Check authorization
   const isChairPerson = userData?.councilPosition === 'CHAIRPERSON' || userData?.councilPosition === 'CHAIRMAN';
@@ -86,92 +128,98 @@ export default function Peers() {
     } catch (error) {
       console.error('Failed to fetch peers:', error);
       setError('Failed to fetch peers. Please try again.');
+      message.error('Failed to fetch peers. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
+  const handleTabChange = (key) => {
+    setActiveTab(key);
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
-  const openActionDialog = (user, action) => {
+  const showModal = (user, action) => {
     let title = '';
-    let message = '';
+    let content = '';
+    let icon = null;
     
     switch(action) {
       case 'approve':
         title = 'Approve User';
-        message = `Are you sure you want to approve ${user.name}?`;
+        content = `Are you sure you want to approve ${user.name}?`;
+        icon = <CheckCircleOutlined style={{ color: palette.secondary }} />;
         break;
       case 'reject':
         title = 'Reject User Request';
-        message = `Are you sure you want to reject ${user.name}'s request?`;
+        content = `Are you sure you want to reject ${user.name}'s request?`;
+        icon = <CloseCircleOutlined style={{ color: palette.action }} />;
         break;
       case 'remove':
         title = 'Remove User';
-        message = `Are you sure you want to remove ${user.name} from the system? This action cannot be undone.`;
+        content = `Are you sure you want to remove ${user.name} from the system? This action cannot be undone.`;
+        icon = <DeleteOutlined style={{ color: palette.action }} />;
         break;
       case 'make-admin':
         title = 'Make Admin';
-        message = `Are you sure you want to give admin privileges to ${user.name}?`;
+        content = `Are you sure you want to give admin privileges to ${user.name}?`;
+        icon = <StarOutlined style={{ color: palette.secondary }} />;
         break;
       case 'remove-admin':
         title = 'Remove Admin';
-        message = `Are you sure you want to remove admin privileges from ${user.name}?`;
+        content = `Are you sure you want to remove admin privileges from ${user.name}?`;
+        icon = <KeyOutlined style={{ color: palette.action }} />;
         break;
     }
     
-    setActionDialog({ open: true, user, action, title, message });
-  };
-
-  const closeActionDialog = () => {
-    setActionDialog({ open: false, user: null, action: '', title: '', message: '' });
+    setModalConfig({ 
+      visible: true, 
+      user, 
+      action, 
+      title, 
+      content, 
+      icon 
+    });
   };
 
   const handleAction = async () => {
-    if (!actionDialog.user) return;
+    if (!modalConfig.user) return;
     
     setActionLoading(true);
     try {
       let response;
       
-      switch(actionDialog.action) {
+      switch(modalConfig.action) {
         case 'approve':
-          response = await axiosClient.post(`/admin/approve-user/${actionDialog.user._id}`);
-          showSnackbar(`Approved ${actionDialog.user.name} successfully!`);
+          response = await axiosClient.post(`/admin/approve-user/${modalConfig.user._id}`);
+          message.success(`Approved ${modalConfig.user.name} successfully!`);
           break;
         case 'reject':
-          response = await axiosClient.post(`/admin/reject-user/${actionDialog.user._id}`);
-          showSnackbar(`Rejected ${actionDialog.user.name}'s request`);
+          response = await axiosClient.post(`/admin/reject-user/${modalConfig.user._id}`);
+          message.success(`Rejected ${modalConfig.user.name}'s request`);
           break;
         case 'remove':
-          response = await axiosClient.delete(`/admin/remove/${actionDialog.user._id}`);
-          showSnackbar(`Removed ${actionDialog.user.name} from the system`);
+          response = await axiosClient.delete(`/admin/remove/${modalConfig.user._id}`);
+          message.success(`Removed ${modalConfig.user.name} from the system`);
           break;
         case 'make-admin':
-          response = await axiosClient.patch(`/admin/make-admin/${actionDialog.user._id}`);
-          showSnackbar(`Made ${actionDialog.user.name} an admin`);
+          response = await axiosClient.patch(`/admin/make-admin/${modalConfig.user._id}`);
+          message.success(`Made ${modalConfig.user.name} an admin`);
           break;
         case 'remove-admin':
-          response = await axiosClient.patch(`/admin/remove-admin/${actionDialog.user._id}`);
-          showSnackbar(`Removed admin privileges from ${actionDialog.user.name}`);
+          response = await axiosClient.patch(`/admin/remove-admin/${modalConfig.user._id}`);
+          message.success(`Removed admin privileges from ${modalConfig.user.name}`);
           break;
       }
 
       // Update local state
-      if (actionDialog.action === 'remove') {
-        setPeers(prevPeers => prevPeers.filter(user => user._id !== actionDialog.user._id));
+      if (modalConfig.action === 'remove') {
+        setPeers(prevPeers => prevPeers.filter(user => user._id !== modalConfig.user._id));
       } else {
         setPeers(prevPeers => 
           prevPeers.map(user => {
-            if (user._id === actionDialog.user._id) {
+            if (user._id === modalConfig.user._id) {
               const updatedUser = { ...user };
-              switch(actionDialog.action) {
+              switch(modalConfig.action) {
                 case 'approve':
                   updatedUser.approvalStatus = 'APPROVED';
                   updatedUser.approvedBy = userData?._id;
@@ -194,148 +242,12 @@ export default function Peers() {
         );
       }
       
-      closeActionDialog();
+      setModalConfig({ ...modalConfig, visible: false });
     } catch (error) {
-      showSnackbar(error.response?.data?.message || `Failed to ${actionDialog.action} user`, 'error');
+      message.error(error.response?.data?.message || `Failed to ${modalConfig.action} user`);
     } finally {
       setActionLoading(false);
     }
-  };
-
-  // Filter peers
-  const pendingPeers = peers.filter(user => user.approvalStatus === 'PENDING');
-  const approvedPeers = peers.filter(user => user.approvalStatus === 'APPROVED');
-  const rejectedPeers = peers.filter(user => user.approvalStatus === 'REJECTED');
-  const adminPeers = peers.filter(user => user?.admin);
-  const allPeers = peers;
-
-  console.log("peers: ", peers);
-  // Button styling with 3D effects
-  const getButtonStyle = (color) => ({
-    fontWeight: 600,
-    borderRadius: 3,
-    px: 2,
-    py: 1,
-    textTransform: 'none',
-    transition: 'all 0.2s ease',
-    boxShadow: theme.shadows[3],
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: theme.shadows[6],
-    },
-    '&:active': {
-      transform: 'translateY(0)',
-      boxShadow: theme.shadows[2],
-    }
-  });
-
-  const getIconButtonStyle = (color) => ({
-    borderRadius: 2,
-    transition: 'all 0.2s ease',
-    boxShadow: theme.shadows[2],
-    '&:hover': {
-      transform: 'translateY(-2px)',
-      boxShadow: theme.shadows[4],
-    },
-    '&:active': {
-      transform: 'translateY(0)',
-      boxShadow: theme.shadows[1],
-    }
-  });
-
-  const renderUserRoleChip = (user) => {
-    const getRoleConfig = () => {
-      if (user.role === 'STUDENT_COUNCIL') {
-        if (user.councilPosition === 'CLASS_REP') return { label: 'Class Rep', color: 'primary', icon: <School /> };
-        if (user.councilPosition === 'CHAIRMAN') return { label: 'Chairman', color: 'info', icon: <Shield /> };
-        if (user.councilPosition === 'SPORTS_SECRETARY') return { label: 'Sports Secretary', color: 'success', icon: <Person /> };
-        if (user.councilPosition === 'ARTS_SECRETARY') return { label: 'Arts Secretary', color: 'warning', icon: <Person /> };
-        return { label: 'CHAIRPERSON', color: 'info', icon: <Shield /> };
-      }
-      return { label: 'Student', color: 'default', icon: <Person /> };
-    };
-
-    const config = getRoleConfig();
-    return (
-      <Chip
-        size="small"
-        label={config.label}
-        color={config.color}
-        icon={config.icon}
-        sx={{ 
-          ml: 1,
-          fontWeight: 600,
-          boxShadow: theme.shadows[1]
-        }}
-      />
-    );
-  };
-
-  const renderApprovalStatusChip = (user) => {
-    switch (user.approvalStatus) {
-      case 'PENDING':
-        return (
-          <Chip
-            size="small"
-            label="Pending"
-            color="warning"
-            icon={<PendingActions />}
-            sx={{ 
-              ml: 1,
-              fontWeight: 600,
-              boxShadow: theme.shadows[1]
-            }}
-          />
-        );
-      case 'APPROVED':
-        return (
-          <Chip
-            size="small"
-            label="Approved"
-            color="success"
-            icon={<VerifiedUser />}
-            sx={{ 
-              ml: 1,
-              fontWeight: 600,
-              boxShadow: theme.shadows[1]
-            }}
-          />
-        );
-      case 'REJECTED':
-        return (
-          <Chip
-            size="small"
-            label="Rejected"
-            color="error"
-            icon={<Block />}
-            sx={{ 
-              ml: 1,
-              fontWeight: 600,
-              boxShadow: theme.shadows[1]
-            }}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getUserInitials = (name) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getAvatarColor = (user) => {
-    if (user?.admin) return theme.palette.error.main;
-    if (user?.approvalStatus === 'PENDING') return theme.palette.warning.main;
-    if (user?.approvalStatus === 'APPROVED') return theme.palette.success.main;
-    if (user?.approvalStatus === 'REJECTED') return theme.palette.error.main;
-    return theme.palette.primary.main;
   };
 
   const canApproveReject = (user) => {
@@ -362,794 +274,1015 @@ export default function Peers() {
     return true;
   };
 
-  return (
-    <Box sx={{ p: { xs: 2, md: 4 }, bgcolor: 'background.default', minHeight: '100vh' }}>
-      {/* Header with 3D effect */}
-      <Box sx={{ 
-        mb: 4, 
-        p: 3, 
-        borderRadius: 3,
-        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        boxShadow: theme.shadows[4],
-        color: 'white'
-      }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          <Groups sx={{ mr: 2, verticalAlign: 'middle', filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' }} />
-          Student Management
-        </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.9 }}>
-          {userData?.councilPosition === 'CLASS_REP' 
-            ? `Manage students in ${userData?.className}`
-            : userData?.admin 
-              ? 'Manage all students'
-              : 'View your peers'}
-        </Typography>
-      </Box>
+  // Filter peers
+  const pendingPeers = peers.filter(user => user.approvalStatus === 'PENDING');
+  const approvedPeers = peers.filter(user => user.approvalStatus === 'APPROVED');
+  const rejectedPeers = peers.filter(user => user.approvalStatus === 'REJECTED');
+  const adminPeers = peers.filter(user => user?.admin);
 
-      {/* Enhanced Tabs with 3D effect */}
-      <Box sx={{ 
-        mb: 3,
-        bgcolor: 'background.paper',
-        borderRadius: 3,
-        boxShadow: theme.shadows[2],
-        overflow: 'hidden'
-      }}>
-        <Tabs 
-          value={tabValue} 
-          onChange={handleTabChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          sx={{
-            '& .MuiTab-root': {
-              fontWeight: 600,
-              minHeight: 60,
-              '&.Mui-selected': {
-                bgcolor: 'action.hover',
-              }
-            }
-          }}
-        >
-          <Tab 
-            icon={
-              <Badge badgeContent={pendingPeers.length} color="error">
-                <PersonAdd />
-              </Badge>
-            }
-            label="Pending Requests"
-          />
-          <Tab 
-            icon={
-              <Badge badgeContent={approvedPeers.length} color="success">
-                <CheckCircle />
-              </Badge>
-            }
-            label="Approved"
-          />
-          <Tab 
-            icon={
-              <Badge badgeContent={rejectedPeers.length} color="error">
-                <Cancel />
-              </Badge>
-            }
-            label="Rejected"
-          />
-          <Tab 
-            icon={
-              <Badge badgeContent={adminPeers.length} color="warning">
-                <Security />
-              </Badge>
-            }
-            label="Admins"
-          />
-          <Tab 
-            icon={
-              <Badge badgeContent={allPeers.length} color="info">
-                <Groups />
-              </Badge>
-            }
-            label="All Peers"
-          />
-        </Tabs>
-      </Box>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, borderRadius: 2, boxShadow: theme.shadows[1] }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', p: 6 }}>
-          <CircularProgress size={60} />
-        </Box>
-      ) : (
-        <>
-          {/* Pending Requests Tab */}
-          <TabPanel value={tabValue} index={0}>
-            {pendingPeers.length === 0 ? (
-              <Alert severity="info" sx={{ borderRadius: 2, boxShadow: theme.shadows[1] }}>
-                No pending approval requests at the moment
-              </Alert>
-            ) : (
-              <Stack spacing={2}>
-                {pendingPeers.map((user) => (
-                  <Card key={user._id} sx={{ 
-                    borderRadius: 3,
-                    boxShadow: theme.shadows[3],
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[6],
-                    }
-                  }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <Avatar
-                            sx={{
-                              bgcolor: getAvatarColor(user),
-                              width: 60,
-                              height: 60,
-                              mr: 3,
-                              fontSize: '1.25rem',
-                              fontWeight: 'bold',
-                              boxShadow: theme.shadows[3]
-                            }}
-                          >
-                            {getUserInitials(user.name)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="h6" fontWeight="bold">
-                              {user.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {user.email}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
-                              <Chip
-                                size="small"
-                                label={user.className || 'No Class'}
-                                sx={{ 
-                                  bgcolor: theme.palette.secondary.main,
-                                  color: 'white',
-                                  fontWeight: 600
-                                }}
-                              />
-                              {renderUserRoleChip(user)}
-                              {renderApprovalStatusChip(user)}
-                            </Box>
-                          </Box>
-                        </Box>
-                        
-                        {canApproveReject(user) && canManageUser(user) && (
-                          <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Approve User">
-                              <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={<CheckCircle />}
-                                onClick={() => openActionDialog(user, 'approve')}
-                                sx={getButtonStyle('success')}
-                              >
-                                Approve
-                              </Button>
-                            </Tooltip>
-                            <Tooltip title="Reject Request">
-                              <Button
-                                variant="outlined"
-                                color="error"
-                                startIcon={<Cancel />}
-                                onClick={() => openActionDialog(user, 'reject')}
-                                sx={getButtonStyle('error')}
-                              >
-                                Reject
-                              </Button>
-                            </Tooltip>
-                          </Box>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </TabPanel>
-
-          {/* Approved Peers Tab */}
-          <TabPanel value={tabValue} index={1}>
-            {approvedPeers.length === 0 ? (
-              <Alert severity="info" sx={{ borderRadius: 2, boxShadow: theme.shadows[1] }}>
-                No approved peers yet
-              </Alert>
-            ) : (
-              <Box>
-                {userData?.councilPosition !== "CLASS_REP" ? (
-                  <>
-                    <Typography variant="subtitle1" fontWeight="bold" color="text.secondary" gutterBottom>
-                      Grouped by Class
-                    </Typography>
-                    <Divider sx={{ mb: 3 }} />
-                    
-                    {Object.entries(
-                      approvedPeers.reduce((acc, user) => {
-                        const className = user.className || 'Unassigned';
-                        if (!acc[className]) acc[className] = [];
-                        acc[className].push(user);
-                        return acc;
-                      }, {})
-                    ).map(([className, classUsers]) => (
-                      <Box key={className} sx={{ mb: 4 }}>
-                        <Typography variant="h6" gutterBottom color="primary">
-                          <School sx={{ mr: 1, verticalAlign: 'middle' }} />
-                          {className}
-                          <Chip 
-                            label={`${classUsers.length} members`} 
-                            size="small" 
-                            sx={{ ml: 2, fontWeight: 600 }}
-                          />
-                        </Typography>
-                        <Stack spacing={1}>
-                          {classUsers.map((user) => (
-                            <Card key={user._id} variant="outlined" sx={{ borderRadius: 2 }}>
-                              <CardContent sx={{ py: 1.5 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                                    <Avatar
-                                      sx={{
-                                        bgcolor: getAvatarColor(user),
-                                        width: 45,
-                                        height: 45,
-                                        mr: 2,
-                                        fontSize: '0.875rem',
-                                        boxShadow: theme.shadows[1]
-                                      }}
-                                    >
-                                      {getUserInitials(user.name)}
-                                    </Avatar>
-                                    <Box>
-                                      <Typography variant="body1" fontWeight="medium">
-                                        {user.name}
-                                      </Typography>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                                        {renderUserRoleChip(user)}
-                                        {user.admin && (
-                                          <Chip
-                                            size="small"
-                                            label="Admin"
-                                            color="error"
-                                            icon={<Security />}
-                                            sx={{ fontWeight: 600 }}
-                                          />
-                                        )}
-                                      </Box>
-                                    </Box>
-                                  </Box>
-                                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                                    {canMakeAdmin && !user.admin && canManageUser(user) && (
-                                      <Tooltip title="Make Admin">
-                                        <IconButton
-                                          size="small"
-                                          color="warning"
-                                          onClick={() => openActionDialog(user, 'make-admin')}
-                                          sx={getIconButtonStyle('warning')}
-                                        >
-                                          <StarBorder />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                    {canRemovePeer && canManageUser(user) && (
-                                      <Tooltip title="Remove User">
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={() => openActionDialog(user, 'remove')}
-                                          sx={getIconButtonStyle('error')}
-                                        >
-                                          <Delete />
-                                        </IconButton>
-                                      </Tooltip>
-                                    )}
-                                  </Box>
-                                </Box>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </Stack>
-                      </Box>
-                    ))}
-                  </>
-                ) :(
-                                    <Stack spacing={2}>
-                    {approvedPeers.map((user) => (
-                      <Card key={user._id} sx={{ 
-                        borderRadius: 2,
-                        boxShadow: theme.shadows[1],
-                        transition: 'transform 0.2s ease',
-                        '&:hover': {
-                          transform: 'translateY(-2px)',
-                          boxShadow: theme.shadows[3],
-                        }
-                      }}>
-                        <CardContent>
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                              <Avatar
-                                sx={{
-                                  bgcolor: getAvatarColor(user),
-                                  width: 56,
-                                  height: 56,
-                                  mr: 2,
-                                  fontSize: '1rem',
-                                  fontWeight: 'bold',
-                                  boxShadow: theme.shadows[2]
-                                }}
-                              >
-                                {getUserInitials(user.name)}
-                              </Avatar>
-                              <Box>
-                                <Typography variant="h6" fontWeight="bold">
-                                  {user.name}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                  {user.email}
-                                </Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                                  <Chip
-                                    size="small"
-                                    label={user.className || 'No Class'}
-                                    sx={{ 
-                                      bgcolor: theme.palette.secondary.main,
-                                      color: 'white',
-                                      fontWeight: 600
-                                    }}
-                                  />
-                                  {renderUserRoleChip(user)}
-                                  {user.admin && (
-                                    <Chip
-                                      size="small"
-                                      label="Admin"
-                                      color="error"
-                                      icon={<Security />}
-                                      sx={{ fontWeight: 600 }}
-                                    />
-                                  )}
-                                </Box>
-                              </Box>
-                            </Box>
-                          </Box>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </Stack>
-                )}
-              </Box>
-            )}
-          </TabPanel>
-
-          {/* Rejected Peers Tab */}
-          <TabPanel value={tabValue} index={2}>
-            {rejectedPeers.length === 0 ? (
-              <Alert severity="info" sx={{ borderRadius: 2, boxShadow: theme.shadows[1] }}>
-                No rejected peers
-              </Alert>
-            ) : (
-              <Stack spacing={2}>
-                {rejectedPeers.map((user) => (
-                  <Card key={user._id} variant="outlined" sx={{ borderRadius: 2 }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <Avatar
-                            sx={{
-                              bgcolor: getAvatarColor(user),
-                              width: 56,
-                              height: 56,
-                              mr: 2,
-                              fontSize: '1rem',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            {getUserInitials(user.name)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="h6" fontWeight="bold">
-                              {user.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {user.email}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                              <Chip
-                                size="small"
-                                label={user.className || 'No Class'}
-                                sx={{ 
-                                  bgcolor: theme.palette.secondary.main,
-                                  color: 'white',
-                                  fontWeight: 600
-                                }}
-                              />
-                              {renderUserRoleChip(user)}
-                              {renderApprovalStatusChip(user)}
-                            </Box>
-                          </Box>
-                        </Box>
-                        {canRemovePeer && canManageUser(user) && (
-                          <Tooltip title="Remove User">
-                            <IconButton
-                              color="error"
-                              onClick={() => openActionDialog(user, 'remove')}
-                              sx={getIconButtonStyle('error')}
-                            >
-                              <Delete />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </TabPanel>
-
-          {/* Admins Tab */}
-          <TabPanel value={tabValue} index={3}>
-            {adminPeers.length === 0 ? (
-              <Alert severity="info" sx={{ borderRadius: 2, boxShadow: theme.shadows[1] }}>
-                No admin users found
-              </Alert>
-            ) : (
-              <Stack spacing={2}>
-                {adminPeers.map((user) => (
-                  <Card key={user._id} sx={{ 
-                    borderRadius: 3,
-                    boxShadow: theme.shadows[3],
-                    bgcolor: 'action.hover',
-                    transition: 'transform 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-3px)',
-                      boxShadow: theme.shadows[5],
-                    }
-                  }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <Avatar
-                            sx={{
-                              bgcolor: getAvatarColor(user),
-                              width: 60,
-                              height: 60,
-                              mr: 3,
-                              fontSize: '1.25rem',
-                              fontWeight: 'bold',
-                              boxShadow: theme.shadows[3]
-                            }}
-                          >
-                            {getUserInitials(user.name)}
-                          </Avatar>
-                          <Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                              <Typography variant="h6" fontWeight="bold">
-                                {user.name}
-                              </Typography>
-                              <Chip
-                                size="small"
-                                label="Admin"
-                                color="error"
-                                icon={<Security />}
-                                sx={{ fontWeight: 700, boxShadow: theme.shadows[1] }}
-                              />
-                            </Box>
-                            <Typography variant="body2" color="text.secondary">
-                              {user.email}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
-                              <Chip
-                                size="small"
-                                label={user.className || 'No Class'}
-                                sx={{ 
-                                  bgcolor: theme.palette.secondary.main,
-                                  color: 'white',
-                                  fontWeight: 600
-                                }}
-                              />
-                              {renderUserRoleChip(user)}
-                              {renderApprovalStatusChip(user)}
-                            </Box>
-                          </Box>
-                        </Box>
-                        
-                        {canMakeAdmin && canManageUser(user) && (
-                          <Tooltip title="Remove Admin">
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              startIcon={<KeyOff />}
-                              onClick={() => openActionDialog(user, 'remove-admin')}
-                              sx={getButtonStyle('error')}
-                            >
-                              Remove Admin
-                            </Button>
-                          </Tooltip>
-                        )}
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </TabPanel>
-
-          {/* All Peers Tab */}
-          <TabPanel value={tabValue} index={4}>
-            {allPeers.length === 0 ? (
-              <Alert severity="info" sx={{ borderRadius: 2, boxShadow: theme.shadows[1] }}>
-                No peers found
-              </Alert>
-            ) : (
-              <Stack spacing={2}>
-                {allPeers.map((user) => (
-                  <Card key={user._id} sx={{ 
-                    borderRadius: 2,
-                    boxShadow: theme.shadows[2],
-                    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                    '&:hover': {
-                      transform: 'translateY(-3px)',
-                      boxShadow: theme.shadows[4],
-                    }
-                  }}>
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                          <Avatar
-                            sx={{
-                              bgcolor: getAvatarColor(user),
-                              width: 56,
-                              height: 56,
-                              mr: 2,
-                              fontSize: '1rem',
-                              fontWeight: 'bold',
-                              boxShadow: theme.shadows[2]
-                            }}
-                          >
-                            {getUserInitials(user.name)}
-                          </Avatar>
-                          <Box>
-                            <Typography variant="h6" fontWeight="bold">
-                              {user.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {user.email}
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5, flexWrap: 'wrap', gap: 0.5 }}>
-                              <Chip
-                                size="small"
-                                label={user.className || 'No Class'}
-                                sx={{ 
-                                  bgcolor: theme.palette.secondary.main,
-                                  color: 'white',
-                                  fontWeight: 600
-                                }}
-                              />
-                              {renderUserRoleChip(user)}
-                              {renderApprovalStatusChip(user)}
-                              {user.admin && (
-                                <Chip
-                                  size="small"
-                                  label="Admin"
-                                  color="error"
-                                  icon={<Security />}
-                                  sx={{ fontWeight: 600 }}
-                                />
-                              )}
-                            </Box>
-                          </Box>
-                        </Box>
-                        
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          {/* Show approve/reject for pending users */}
-                          {user.approvalStatus === 'PENDING' && canApproveReject(user) && canManageUser(user) && (
-                            <>
-                              <Tooltip title="Approve">
-                                <IconButton
-                                  color="success"
-                                  onClick={() => openActionDialog(user, 'approve')}
-                                  sx={getIconButtonStyle('success')}
-                                >
-                                  <CheckCircle />
-                                </IconButton>
-                              </Tooltip>
-                              <Tooltip title="Reject">
-                                <IconButton
-                                  color="error"
-                                  onClick={() => openActionDialog(user, 'reject')}
-                                  sx={getIconButtonStyle('error')}
-                                >
-                                  <Cancel />
-                                </IconButton>
-                              </Tooltip>
-                            </>
-                          )}
-                          
-                          {/* Show make admin for non-admins (if canMakeAdmin) */}
-                          {canMakeAdmin && !user.admin && canManageUser(user) && (
-                            <Tooltip title="Make Admin">
-                              <IconButton
-                                color="warning"
-                                onClick={() => openActionDialog(user, 'make-admin')}
-                                sx={getIconButtonStyle('warning')}
-                              >
-                                <Star />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          
-                          {/* Show remove admin for admins (if canMakeAdmin) */}
-                          {canMakeAdmin && user.admin && canManageUser(user) && (
-                            <Tooltip title="Remove Admin">
-                              <IconButton
-                                color="error"
-                                onClick={() => openActionDialog(user, 'remove-admin')}
-                                sx={getIconButtonStyle('error')}
-                              >
-                                <KeyOff />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          
-                          {/* Show remove user for admins */}
-                          {canRemovePeer && canManageUser(user) && (
-                            <Tooltip title="Remove User">
-                              <IconButton
-                                color="error"
-                                onClick={() => openActionDialog(user, 'remove')}
-                                sx={getIconButtonStyle('error')}
-                              >
-                                <Delete />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </Box>
-                    </CardContent>
-                  </Card>
-                ))}
-              </Stack>
-            )}
-          </TabPanel>
-        </>
-      )}
-
-      {/* Enhanced Action Dialog */}
-      <Dialog 
-        open={actionDialog.open} 
-        onClose={closeActionDialog}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: theme.shadows[8],
-            minWidth: 400
-          }
-        }}
-      >
-        <DialogTitle sx={{ 
-          bgcolor: actionDialog.action === 'remove' ? 'error.main' : 
-                  actionDialog.action.includes('admin') ? 'warning.main' : 'primary.main',
-          color: 'white',
-          borderRadius: '12px 12px 0 0',
-          py: 2
-        }}>
-          <Typography variant="h6" fontWeight="bold">
-            {actionDialog.title}
-          </Typography>
-        </DialogTitle>
-        
-        <DialogContent sx={{ py: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+  // Responsive table columns
+  const getTableColumns = () => {
+    const baseColumns = [
+      {
+        title: 'User',
+        dataIndex: 'name',
+        key: 'name',
+        width: isMobile ? 150 : 200,
+        render: (text, record) => (
+          <Space direction={isMobile ? "vertical" : "horizontal"} align={isMobile ? "start" : "center"}>
             <Avatar
-              sx={{
-                bgcolor: getAvatarColor(actionDialog.user),
-                width: 50,
-                height: 50,
-                mr: 2,
-                fontSize: '1rem',
+              size={isMobile ? 40 : 48}
+              style={{
+                backgroundColor: getAvatarColor(record),
+                color: palette.text,
                 fontWeight: 'bold',
-                boxShadow: theme.shadows[2]
+                boxShadow: `0 2px 8px rgba(0,0,0,0.3)`
               }}
             >
-              {actionDialog.user && getUserInitials(actionDialog.user.name)}
+              {getUserInitials(record.name)}
             </Avatar>
-            <Box>
-              <Typography variant="h6" fontWeight="bold">
-                {actionDialog.user?.name}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {actionDialog.user?.email}
-              </Typography>
-            </Box>
-          </Box>
-          
-          <Typography gutterBottom>
-            {actionDialog.message}
-          </Typography>
-          
-          {(actionDialog.action === 'remove' || actionDialog.action === 'remove-admin') && (
-            <Alert severity="error" sx={{ mt: 2, borderRadius: 2 }}>
-              This action cannot be undone!
-            </Alert>
-          )}
-        </DialogContent>
-        
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button 
-            onClick={closeActionDialog}
-            disabled={actionLoading}
-            sx={{ 
-              borderRadius: 2,
-              px: 3,
-              fontWeight: 600
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleAction}
-            color={
-              actionDialog.action === 'remove' || actionDialog.action === 'reject' ? 'error' :
-              actionDialog.action === 'make-admin' || actionDialog.action === 'remove-admin' ? 'warning' :
-              'success'
-            }
-            variant="contained"
-            disabled={actionLoading}
-            sx={{ 
-              borderRadius: 2,
-              px: 4,
-              py: 1,
+            <div>
+              <Text 
+                strong 
+                style={{ 
+                  color: palette.text,
+                  fontSize: isMobile ? '14px' : '16px'
+                }}
+                ellipsis={{ tooltip: text }}
+              >
+                {text}
+              </Text>
+              <br />
+              <Text 
+                type="secondary" 
+                style={{ 
+                  color: `${palette.text}99`,
+                  fontSize: isMobile ? '12px' : '14px'
+                }}
+                ellipsis={{ tooltip: record.email }}
+              >
+                {record.email}
+              </Text>
+            </div>
+          </Space>
+        ),
+      },
+      {
+        title: 'Class',
+        dataIndex: 'className',
+        key: 'className',
+        responsive: ['md'],
+        width: 120,
+        render: (text) => (
+          <Tag 
+            color={palette.secondary} 
+            style={{ 
+              borderRadius: '4px',
               fontWeight: 600,
-              boxShadow: theme.shadows[3],
-              '&:hover': {
-                boxShadow: theme.shadows[5],
-              }
+              border: 'none',
+              margin: isMobile ? '2px 0' : '0'
             }}
-            startIcon={
-              actionLoading ? <CircularProgress size={20} color="inherit" /> :
-              actionDialog.action === 'approve' ? <CheckCircle /> :
-              actionDialog.action === 'reject' ? <Cancel /> :
-              actionDialog.action === 'remove' ? <Delete /> :
-              actionDialog.action === 'make-admin' ? <Star /> :
-              actionDialog.action === 'remove-admin' ? <KeyOff /> :
-              null
-            }
           >
-            {actionLoading ? 'Processing...' : 
-             actionDialog.action === 'approve' ? 'Approve' :
-             actionDialog.action === 'reject' ? 'Reject' :
-             actionDialog.action === 'remove' ? 'Remove User' :
-             actionDialog.action === 'make-admin' ? 'Make Admin' :
-             actionDialog.action === 'remove-admin' ? 'Remove Admin' : ''}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            {text || 'No Class'}
+          </Tag>
+        ),
+      },
+      {
+        title: 'Role',
+        dataIndex: 'role',
+        key: 'role',
+        responsive: ['sm'],
+        width: 140,
+        render: (_, record) => renderUserRoleTag(record),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'approvalStatus',
+        key: 'approvalStatus',
+        width: 120,
+        render: (_, record) => renderApprovalStatusTag(record),
+      },
+      {
+        title: 'Actions',
+        key: 'actions',
+        width: isMobile ? 80 : 150,
+        fixed: isMobile ? 'right' : false,
+        render: (_, record) => renderActionButtons(record),
+      },
+    ];
 
-      {/* Enhanced Snackbar */}
-      {snackbar.open && (
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          sx={{ 
-            position: 'fixed', 
-            bottom: 20, 
-            right: 20, 
-            zIndex: 1000,
-            minWidth: 300,
-            borderRadius: 2,
-            boxShadow: theme.shadows[6],
-            animation: 'slideIn 0.3s ease'
+    return baseColumns;
+  };
+
+  const getUserInitials = (name) => {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getAvatarColor = (user) => {
+    if (user?.admin) return palette.action;
+    if (user?.approvalStatus === 'PENDING') return '#faad14';
+    if (user?.approvalStatus === 'APPROVED') return '#52c41a';
+    if (user?.approvalStatus === 'REJECTED') return '#ff4d4f';
+    return palette.secondary;
+  };
+
+  const renderUserRoleTag = (user) => {
+    const getRoleConfig = () => {
+      if (user.role === 'STUDENT_COUNCIL') {
+        if (user.councilPosition === 'CLASS_REP') return { label: 'Class Rep', color: 'blue', icon: <ReadOutlined  /> };
+        if (user.councilPosition === 'CHAIRMAN') return { label: 'Chairman', color: 'cyan', icon: <SecurityScanOutlined /> };
+        if (user.councilPosition === 'SPORTS_SECRETARY') return { label: 'Sports Secretary', color: 'green', icon: <UserOutlined /> };
+        if (user.councilPosition === 'ARTS_SECRETARY') return { label: 'Arts Secretary', color: 'orange', icon: <UserOutlined /> };
+        return { label: 'CHAIRPERSON', color: 'cyan', icon: <SecurityScanOutlined /> };
+      }
+      return { label: 'Student', color: 'default', icon: <UserOutlined /> };
+    };
+
+    const config = getRoleConfig();
+    return (
+      <Tag
+        color={config.color}
+        icon={isMobile ? null : config.icon}
+        style={{ 
+          borderRadius: '4px',
+          fontWeight: 600,
+          fontSize: isMobile ? '11px' : '12px',
+          padding: isMobile ? '2px 6px' : '4px 8px',
+          margin: '2px',
+          boxShadow: `0 1px 3px rgba(0,0,0,0.2)`
+        }}
+      >
+        {isMobile ? config.label.charAt(0) : config.label}
+      </Tag>
+    );
+  };
+
+  const renderApprovalStatusTag = (user) => {
+    const getStatusConfig = () => {
+      switch (user.approvalStatus) {
+        case 'PENDING':
+          return { label: 'Pending', color: 'warning', icon: <ClockCircleOutlined /> };
+        case 'APPROVED':
+          return { label: 'Approved', color: 'success', icon: <SafetyCertificateOutlined /> };
+        case 'REJECTED':
+          return { label: 'Rejected', color: 'error', icon: <StopOutlined /> };
+        default:
+          return { label: 'Unknown', color: 'default', icon: <InfoCircleOutlined /> };
+      }
+    };
+
+    const config = getStatusConfig();
+    return (
+      <Tag
+        color={config.color}
+        icon={isMobile ? null : config.icon}
+        style={{ 
+          borderRadius: '4px',
+          fontWeight: 600,
+          fontSize: isMobile ? '11px' : '12px',
+          padding: isMobile ? '2px 6px' : '4px 8px',
+          margin: '2px',
+          boxShadow: `0 1px 3px rgba(0,0,0,0.2)`
+        }}
+      >
+        {isMobile ? config.label.charAt(0) : config.label}
+      </Tag>
+    );
+  };
+
+  const renderActionButtons = (user) => {
+    const actionItems = [];
+    
+    if (user.approvalStatus === 'PENDING' && canApproveReject(user) && canManageUser(user)) {
+      actionItems.push(
+        {
+          key: 'approve',
+          label: 'Approve',
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          onClick: () => showModal(user, 'approve')
+        },
+        {
+          key: 'reject',
+          label: 'Reject',
+          icon: <CloseCircleOutlined style={{ color: palette.action }} />,
+          onClick: () => showModal(user, 'reject')
+        }
+      );
+    }
+    
+    if (canMakeAdmin && !user.admin && canManageUser(user)) {
+      actionItems.push({
+        key: 'make-admin',
+        label: 'Make Admin',
+        icon: <StarOutlined style={{ color: '#faad14' }} />,
+        onClick: () => showModal(user, 'make-admin')
+      });
+    }
+    
+    if (canMakeAdmin && user.admin && canManageUser(user)) {
+      actionItems.push({
+        key: 'remove-admin',
+        label: 'Remove Admin',
+        icon: <KeyOutlined style={{ color: palette.action }} />,
+        onClick: () => showModal(user, 'remove-admin')
+      });
+    }
+    
+    if (canRemovePeer && canManageUser(user)) {
+      actionItems.push({
+        key: 'remove',
+        label: 'Remove User',
+        icon: <DeleteOutlined style={{ color: palette.action }} />,
+        danger: true,
+        onClick: () => showModal(user, 'remove')
+      });
+    }
+
+    if (actionItems.length === 0) {
+      return <Text type="secondary" style={{ fontSize: '12px' }}>No actions</Text>;
+    }
+
+    // On mobile, show a menu button that opens actions in a drawer
+    if (isMobile) {
+      return (
+        <Button
+          type="text"
+          icon={<MoreOutlined />}
+          size="small"
+          onClick={() => {
+            setMobileActionUser(user);
+            setMobileDrawerVisible(true);
+          }}
+          style={{
+            color: palette.text,
+            padding: '4px'
+          }}
+        />
+      );
+    }
+
+    // On tablet/desktop, show buttons or dropdown
+    if (actionItems.length <= 2 || isTablet) {
+      return (
+        <Space wrap size={isTablet ? 4 : 8}>
+          {actionItems.map(item => (
+            <Tooltip key={item.key} title={item.label}>
+              <Button
+                type={item.key.includes('remove') || item.key === 'reject' ? 'default' : 'primary'}
+                danger={item.key.includes('remove') || item.key === 'reject'}
+                icon={item.icon}
+                onClick={item.onClick}
+                size="small"
+                style={{
+                  borderRadius: '4px',
+                  fontWeight: 600,
+                  fontSize: isTablet ? '11px' : '12px',
+                  padding: isTablet ? '4px 6px' : '6px 8px',
+                  minWidth: isTablet ? 'auto' : '80px',
+                  height: 'auto',
+                  boxShadow: `0 2px 4px rgba(0,0,0,0.3)`
+                }}
+              >
+                {isTablet ? null : item.label}
+              </Button>
+            </Tooltip>
+          ))}
+        </Space>
+      );
+    }
+
+    // Desktop with many actions - use dropdown
+    return (
+      <Dropdown
+        menu={{
+          items: actionItems
+        }}
+        placement="bottomRight"
+        trigger={['click']}
+      >
+        <Button
+          icon={<MoreOutlined />}
+          size="small"
+          style={{
+            borderRadius: '4px',
+            fontWeight: 600,
+            padding: '6px 12px',
+            boxShadow: `0 2px 4px rgba(0,0,0,0.3)`
           }}
         >
-          {snackbar.message}
-        </Alert>
-      )}
-    </Box>
+          Actions
+        </Button>
+      </Dropdown>
+    );
+  };
+
+  const renderUserCard = (user) => {
+    return (
+      <Card
+        key={user._id}
+        style={{
+          marginBottom: '12px',
+          backgroundColor: palette.surface,
+          borderRadius: '8px',
+          border: `1px solid ${palette.secondary}33`,
+          boxShadow: `0 2px 8px rgba(0,0,0,0.2)`
+        }}
+        bodyStyle={{ padding: '16px' }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Space align="start" style={{ width: '100%', justifyContent: 'space-between' }}>
+            <Space>
+              <Avatar
+                size={48}
+                style={{
+                  backgroundColor: getAvatarColor(user),
+                  color: palette.text,
+                  fontWeight: 'bold',
+                  boxShadow: `0 2px 6px rgba(0,0,0,0.3)`
+                }}
+              >
+                {getUserInitials(user.name)}
+              </Avatar>
+              <div>
+                <Text strong style={{ color: palette.text, fontSize: '16px' }}>
+                  {user.name}
+                </Text>
+                <br />
+                <Text type="secondary" style={{ color: `${palette.text}99`, fontSize: '14px' }}>
+                  {user.email}
+                </Text>
+              </div>
+            </Space>
+            <Button
+              type="text"
+              icon={<MoreOutlined />}
+              onClick={() => {
+                setMobileActionUser(user);
+                setMobileDrawerVisible(true);
+              }}
+            />
+          </Space>
+          
+          <Space wrap style={{ marginTop: '8px' }}>
+            <Tag 
+              color={palette.secondary} 
+              style={{ 
+                borderRadius: '4px',
+                fontWeight: 600,
+                border: 'none',
+                margin: '2px'
+              }}
+            >
+              {user.className || 'No Class'}
+            </Tag>
+            {renderUserRoleTag(user)}
+            {renderApprovalStatusTag(user)}
+            {user.admin && (
+              <Tag
+                color="error"
+                icon={<SecurityScanOutlined />}
+                style={{ 
+                  borderRadius: '4px',
+                  fontWeight: 600,
+                  margin: '2px'
+                }}
+              >
+                Admin
+              </Tag>
+            )}
+          </Space>
+        </Space>
+      </Card>
+    );
+  };
+
+  const renderTabContent = (peersList, emptyMessage) => {
+    if (loading) {
+      return (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    if (peersList.length === 0) {
+      return (
+        <Alert
+          message={emptyMessage}
+          description="No data available"
+          type="info"
+          showIcon
+          style={{ 
+            borderRadius: '8px',
+            margin: '20px 0'
+          }}
+        />
+      );
+    }
+
+    return (
+      <div style={{ padding: isMobile ? '12px 0' : '20px 0' }}>
+        {isMobile ? (
+          <div>
+            {peersList.map(user => renderUserCard(user))}
+          </div>
+        ) : (
+          <Table
+            columns={getTableColumns()}
+            dataSource={peersList}
+            rowKey="_id"
+            pagination={{
+              pageSize: isMobile ? 5 : isTablet ? 8 : 10,
+              showSizeChanger: !isMobile,
+              showQuickJumper: !isMobile,
+              showTotal: (total) => `Total ${total} items`,
+              simple: isMobile,
+              size: isMobile ? 'small' : 'default'
+            }}
+            scroll={isMobile ? { x: 500 } : {}}
+            size={isTablet ? 'middle' : 'default'}
+            style={{
+              backgroundColor: 'transparent',
+              borderRadius: '8px'
+            }}
+          />
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ 
+      padding: isMobile ? '16px' : '24px 20px',
+      minHeight: '100vh',
+      backgroundColor: palette.mainBg,
+      color: palette.text
+    }}>
+      {/* Container for max width with responsive padding */}
+      <div style={{ 
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: isMobile ? '0 8px' : '0 16px'
+      }}>
+        {/* Header Card - Responsive */}
+        <Card
+          style={{
+            marginBottom: isMobile ? '24px' : '32px',
+            background: `linear-gradient(135deg, ${palette.secondary} 0%, #1a6d7f 100%)`,
+            borderRadius: '12px',
+            border: 'none',
+            boxShadow: `0 4px 20px rgba(0,0,0,0.3)`,
+            color: palette.text
+          }}
+          bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
+        >
+          <Space direction={isMobile ? "vertical" : "horizontal"} align={isMobile ? "start" : "center"} style={{ width: '100%' }}>
+            <TeamOutlined style={{ 
+              fontSize: isMobile ? '32px' : isTablet ? '40px' : '48px', 
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.3))' 
+            }} />
+            <div style={{ flex: 1 }}>
+              <Title 
+                level={isMobile ? 4 : isTablet ? 3 : 2} 
+                style={{ 
+                  margin: 0, 
+                  color: palette.text,
+                  lineHeight: 1.2 
+                }}
+              >
+                Student Management
+              </Title>
+              <Text style={{ 
+                opacity: 0.9, 
+                fontSize: isMobile ? '14px' : '16px',
+                display: 'block',
+                marginTop: '4px'
+              }}>
+                {userData?.councilPosition === 'CLASS_REP' 
+                  ? `Manage students in ${userData?.className}`
+                  : userData?.admin 
+                    ? 'Manage all students'
+                    : 'View your peers'}
+              </Text>
+            </div>
+            {isMobile && (
+              <div style={{ alignSelf: 'flex-end' }}>
+                <MobileOutlined style={{ opacity: 0.7 }} />
+              </div>
+            )}
+          </Space>
+        </Card>
+
+        {/* Tabs Section - Responsive */}
+        <Card
+          style={{
+            marginBottom: isMobile ? '24px' : '32px',
+            backgroundColor: palette.surface,
+            borderRadius: '12px',
+            border: `1px solid ${palette.secondary}33`,
+            boxShadow: `0 4px 16px rgba(0,0,0,0.2)`
+          }}
+          bodyStyle={{ padding: isMobile ? '12px 8px' : 0 }}
+        >
+          <Tabs
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            style={{ padding: 0 }}
+            tabBarStyle={{ 
+              margin: 0,
+              padding: isMobile ? '0 4px' : '0 16px'
+            }}
+            size={isMobile ? "small" : "default"}
+            tabPosition={isMobile ? "top" : "top"}
+            type={isMobile ? "card" : "line"}
+            centered={isMobile}
+          >
+            <TabPane
+              tab={
+                <Badge 
+                  count={pendingPeers.length} 
+                  size="small" 
+                  style={{ backgroundColor: palette.action }}
+                  offset={isMobile ? [0, -5] : [10, 0]}
+                >
+                  <Space size={isMobile ? 4 : 8}>
+                    <UserAddOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                    {!isMobile && <span>Pending</span>}
+                    {isMobile && <span>Pending ({pendingPeers.length})</span>}
+                  </Space>
+                </Badge>
+              }
+              key="pending"
+            >
+              {renderTabContent(pendingPeers, "No Pending Requests")}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <Badge 
+                  count={approvedPeers.length} 
+                  size="small" 
+                  style={{ backgroundColor: '#52c41a' }}
+                  offset={isMobile ? [0, -5] : [10, 0]}
+                >
+                  <Space size={isMobile ? 4 : 8}>
+                    <CheckCircleOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                    {!isMobile && <span>Approved</span>}
+                    {isMobile && <span>Approved ({approvedPeers.length})</span>}
+                  </Space>
+                </Badge>
+              }
+              key="approved"
+            >
+              {renderTabContent(approvedPeers, "No Approved Peers")}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <Badge 
+                  count={rejectedPeers.length} 
+                  size="small" 
+                  style={{ backgroundColor: palette.action }}
+                  offset={isMobile ? [0, -5] : [10, 0]}
+                >
+                  <Space size={isMobile ? 4 : 8}>
+                    <CloseCircleOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                    {!isMobile && <span>Rejected</span>}
+                    {isMobile && <span>Rejected ({rejectedPeers.length})</span>}
+                  </Space>
+                </Badge>
+              }
+              key="rejected"
+            >
+              {renderTabContent(rejectedPeers, "No Rejected Peers")}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <Badge 
+                  count={adminPeers.length} 
+                  size="small" 
+                  style={{ backgroundColor: '#faad14' }}
+                  offset={isMobile ? [0, -5] : [10, 0]}
+                >
+                  <Space size={isMobile ? 4 : 8}>
+                    <SecurityScanOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                    {!isMobile && <span>Admins</span>}
+                    {isMobile && <span>Admins ({adminPeers.length})</span>}
+                  </Space>
+                </Badge>
+              }
+              key="admins"
+            >
+              {renderTabContent(adminPeers, "No Admins")}
+            </TabPane>
+
+            <TabPane
+              tab={
+                <Badge 
+                  count={peers.length} 
+                  size="small" 
+                  style={{ backgroundColor: palette.secondary }}
+                  offset={isMobile ? [0, -5] : [10, 0]}
+                >
+                  <Space size={isMobile ? 4 : 8}>
+                    <GroupOutlined style={{ fontSize: isMobile ? '14px' : '16px' }} />
+                    {!isMobile && <span>All</span>}
+                    {isMobile && <span>All ({peers.length})</span>}
+                  </Space>
+                </Badge>
+              }
+              key="all"
+            >
+              {renderTabContent(peers, "No Peers")}
+            </TabPane>
+          </Tabs>
+        </Card>
+
+        {/* Stats Row - Responsive */}
+        <Row 
+          gutter={isMobile ? [8, 8] : [16, 16]} 
+          style={{ marginBottom: isMobile ? '24px' : '32px' }}
+        >
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                backgroundColor: palette.surface,
+                borderRadius: '8px',
+                border: 'none',
+                height: '100%',
+                boxShadow: `0 2px 8px rgba(0,0,0,0.2)`
+              }}
+              bodyStyle={{ padding: isMobile ? '12px' : '16px' }}
+            >
+              <Statistic
+                title="Total"
+                value={peers.length}
+                prefix={<GroupOutlined />}
+                valueStyle={{ 
+                  color: palette.text,
+                  fontSize: isMobile ? '20px' : '24px'
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                backgroundColor: palette.surface,
+                borderRadius: '8px',
+                border: 'none',
+                height: '100%',
+                boxShadow: `0 2px 8px rgba(0,0,0,0.2)`
+              }}
+              bodyStyle={{ padding: isMobile ? '12px' : '16px' }}
+            >
+              <Statistic
+                title="Pending"
+                value={pendingPeers.length}
+                prefix={<ClockCircleOutlined />}
+                valueStyle={{ 
+                  color: '#faad14',
+                  fontSize: isMobile ? '20px' : '24px'
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                backgroundColor: palette.surface,
+                borderRadius: '8px',
+                border: 'none',
+                height: '100%',
+                boxShadow: `0 2px 8px rgba(0,0,0,0.2)`
+              }}
+              bodyStyle={{ padding: isMobile ? '12px' : '16px' }}
+            >
+              <Statistic
+                title="Approved"
+                value={approvedPeers.length}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ 
+                  color: '#52c41a',
+                  fontSize: isMobile ? '20px' : '24px'
+                }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={12} md={6}>
+            <Card
+              style={{
+                backgroundColor: palette.surface,
+                borderRadius: '8px',
+                border: 'none',
+                height: '100%',
+                boxShadow: `0 2px 8px rgba(0,0,0,0.2)`
+              }}
+              bodyStyle={{ padding: isMobile ? '12px' : '16px' }}
+            >
+              <Statistic
+                title="Admins"
+                value={adminPeers.length}
+                prefix={<SecurityScanOutlined />}
+                valueStyle={{ 
+                  color: palette.action,
+                  fontSize: isMobile ? '20px' : '24px'
+                }}
+              />
+            </Card>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Mobile Actions Drawer */}
+      <Drawer
+        title="User Actions"
+        placement="bottom"
+        open={mobileDrawerVisible}
+        onClose={() => setMobileDrawerVisible(false)}
+        height="auto"
+        style={{ borderTopLeftRadius: '16px', borderTopRightRadius: '16px' }}
+        headerStyle={{
+          backgroundColor: palette.surface,
+          borderBottom: `1px solid ${palette.secondary}33`,
+          borderTopLeftRadius: '16px',
+          borderTopRightRadius: '16px'
+        }}
+        bodyStyle={{
+          backgroundColor: palette.mainBg,
+          padding: '0'
+        }}
+      >
+        {mobileActionUser && (
+          <div style={{ padding: '16px' }}>
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Space align="center" style={{ width: '100%', marginBottom: '16px' }}>
+                <Avatar
+                  size={40}
+                  style={{
+                    backgroundColor: getAvatarColor(mobileActionUser),
+                    color: palette.text,
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {getUserInitials(mobileActionUser.name)}
+                </Avatar>
+                <div>
+                  <Text strong style={{ color: palette.text, fontSize: '16px' }}>
+                    {mobileActionUser.name}
+                  </Text>
+                  <br />
+                  <Text type="secondary" style={{ color: `${palette.text}99`, fontSize: '14px' }}>
+                    {mobileActionUser.email}
+                  </Text>
+                </div>
+              </Space>
+              
+              <Space direction="vertical" style={{ width: '100%', gap: '8px' }}>
+                {mobileActionUser.approvalStatus === 'PENDING' && canApproveReject(mobileActionUser) && canManageUser(mobileActionUser) && (
+                  <>
+                    <Button
+                      block
+                      type="primary"
+                      icon={<CheckCircleOutlined />}
+                      onClick={() => {
+                        showModal(mobileActionUser, 'approve');
+                        setMobileDrawerVisible(false);
+                      }}
+                      style={{
+                        height: '48px',
+                        borderRadius: '8px',
+                        fontWeight: 600
+                      }}
+                    >
+                      Approve User
+                    </Button>
+                    <Button
+                      block
+                      danger
+                      icon={<CloseCircleOutlined />}
+                      onClick={() => {
+                        showModal(mobileActionUser, 'reject');
+                        setMobileDrawerVisible(false);
+                      }}
+                      style={{
+                        height: '48px',
+                        borderRadius: '8px',
+                        fontWeight: 600
+                      }}
+                    >
+                      Reject Request
+                    </Button>
+                  </>
+                )}
+                
+                {canMakeAdmin && !mobileActionUser.admin && canManageUser(mobileActionUser) && (
+                  <Button
+                    block
+                    type="primary"
+                    icon={<StarOutlined />}
+                    onClick={() => {
+                      showModal(mobileActionUser, 'make-admin');
+                      setMobileDrawerVisible(false);
+                    }}
+                    style={{
+                      height: '48px',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      backgroundColor: '#faad14',
+                      borderColor: '#faad14'
+                    }}
+                  >
+                    Make Admin
+                  </Button>
+                )}
+                
+                {canMakeAdmin && mobileActionUser.admin && canManageUser(mobileActionUser) && (
+                  <Button
+                    block
+                    danger
+                    icon={<KeyOutlined />}
+                    onClick={() => {
+                      showModal(mobileActionUser, 'remove-admin');
+                      setMobileDrawerVisible(false);
+                    }}
+                    style={{
+                      height: '48px',
+                      borderRadius: '8px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Remove Admin
+                  </Button>
+                )}
+                
+                {canRemovePeer && canManageUser(mobileActionUser) && (
+                  <Button
+                    block
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => {
+                      showModal(mobileActionUser, 'remove');
+                      setMobileDrawerVisible(false);
+                    }}
+                    style={{
+                      height: '48px',
+                      borderRadius: '8px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Remove User
+                  </Button>
+                )}
+                
+                <Button
+                  block
+                  onClick={() => setMobileDrawerVisible(false)}
+                  style={{
+                    height: '48px',
+                    borderRadius: '8px',
+                    marginTop: '8px'
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Space>
+            </Space>
+          </div>
+        )}
+      </Drawer>
+
+      {/* Action Modal */}
+      <Modal
+        title={
+          <Space>
+            {modalConfig.icon}
+            <span style={{ color: palette.text }}>{modalConfig.title}</span>
+          </Space>
+        }
+        open={modalConfig.visible}
+        onOk={handleAction}
+        onCancel={() => setModalConfig({ ...modalConfig, visible: false })}
+        confirmLoading={actionLoading}
+        okText={actionLoading ? 'Processing...' : 
+                modalConfig.action === 'approve' ? 'Approve' :
+                modalConfig.action === 'reject' ? 'Reject' :
+                modalConfig.action === 'remove' ? 'Remove' :
+                modalConfig.action === 'make-admin' ? 'Make Admin' :
+                modalConfig.action === 'remove-admin' ? 'Remove Admin' : 'Confirm'}
+        cancelText="Cancel"
+        okButtonProps={{
+          danger: modalConfig.action === 'remove' || modalConfig.action === 'reject' || modalConfig.action === 'remove-admin',
+          type: 'primary',
+          style: {
+            backgroundColor: modalConfig.action === 'remove' || modalConfig.action === 'reject' || modalConfig.action === 'remove-admin' 
+              ? palette.action 
+              : modalConfig.action === 'make-admin' 
+                ? '#faad14' 
+                : '#52c41a',
+            border: 'none',
+            borderRadius: '6px',
+            fontWeight: 600,
+            height: isMobile ? '44px' : '40px',
+            fontSize: isMobile ? '16px' : '14px'
+          }
+        }}
+        cancelButtonProps={{
+          style: {
+            borderRadius: '6px',
+            fontWeight: 600,
+            height: isMobile ? '44px' : '40px',
+            fontSize: isMobile ? '16px' : '14px'
+          }
+        }}
+        width={isMobile ? '90vw' : 500}
+        style={{ top: isMobile ? '50%' : '20%', transform: isMobile ? 'translateY(-50%)' : 'none' }}
+        bodyStyle={{
+          backgroundColor: palette.surface,
+          color: palette.text,
+          padding: isMobile ? '20px' : '24px',
+          maxHeight: '70vh',
+          overflowY: 'auto'
+        }}
+        headerStyle={{
+          backgroundColor: modalConfig.action === 'remove' || modalConfig.action === 'reject' || modalConfig.action === 'remove-admin' 
+            ? palette.action 
+            : modalConfig.action === 'make-admin' 
+              ? '#faad14' 
+              : palette.secondary,
+          borderBottom: 'none',
+          borderRadius: '8px 8px 0 0',
+          padding: isMobile ? '16px 20px' : '20px 24px'
+        }}
+        footerStyle={{
+          backgroundColor: palette.surface,
+          borderTop: `1px solid ${palette.secondary}33`,
+          padding: isMobile ? '16px 20px' : '20px 24px'
+        }}
+        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+      >
+        {modalConfig.user && (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space direction={isMobile ? "vertical" : "horizontal"} align={isMobile ? "start" : "center"} style={{ width: '100%' }}>
+              <Avatar
+                size={isMobile ? 60 : 50}
+                style={{
+                  backgroundColor: getAvatarColor(modalConfig.user),
+                  color: palette.text,
+                  fontWeight: 'bold',
+                  boxShadow: `0 4px 8px rgba(0,0,0,0.3)`
+                }}
+              >
+                {getUserInitials(modalConfig.user.name)}
+              </Avatar>
+              <div>
+                <Text strong style={{ fontSize: isMobile ? '18px' : '16px', color: palette.text }}>
+                  {modalConfig.user.name}
+                </Text>
+                <br />
+                <Text type="secondary" style={{ 
+                  color: `${palette.text}99`,
+                  fontSize: isMobile ? '14px' : '13px',
+                  wordBreak: 'break-all'
+                }}>
+                  {modalConfig.user.email}
+                </Text>
+              </div>
+            </Space>
+            
+            <Divider style={{ margin: isMobile ? '16px 0' : '20px 0', borderColor: `${palette.secondary}33` }} />
+            
+            <Paragraph style={{ 
+              color: palette.text,
+              fontSize: isMobile ? '16px' : '14px',
+              marginBottom: isMobile ? '16px' : '20px'
+            }}>
+              {modalConfig.content}
+            </Paragraph>
+            
+            {(modalConfig.action === 'remove' || modalConfig.action === 'remove-admin') && (
+              <Alert
+                message="Warning"
+                description="This action cannot be undone!"
+                type="error"
+                showIcon
+                style={{
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(255, 77, 79, 0.1)',
+                  border: '1px solid rgba(255, 77, 79, 0.3)'
+                }}
+              />
+            )}
+          </Space>
+        )}
+      </Modal>
+    </div>
   );
 }

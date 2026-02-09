@@ -1,465 +1,323 @@
 import React, { useState } from 'react';
+import { Layout, Typography, Button, Space, Drawer, Menu, Avatar, Tag, Divider } from 'antd';
 import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Box,
-  Container,
-  Chip,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  Divider,
-  Avatar,
-  Badge,
-  useTheme,
-  useMediaQuery,
-  alpha,
-  ListItemButton
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  School,
-  Home,
-  Campaign,
-  Groups,
-  Login,
-  HowToReg,
-  Person,
-  Close
-} from '@mui/icons-material';
+  MenuOutlined,
+  HomeOutlined,
+  NotificationOutlined,
+  TeamOutlined,
+  LoginOutlined,
+  UserAddOutlined,
+  UserOutlined,
+  CloseOutlined,
+  CrownOutlined
+} from '@ant-design/icons';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { COLORS } from '../utils/colors';
+
+const { Header } = Layout;
 
 const Navbar = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+  const [user] = useState(null); 
+  
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleHomeClick = () => {
+  // Common navigation handlers
+  const handleNavigation = (path, scrollToId = null) => {
     if (location.pathname === '/') {
-      // If already on homepage, scroll to top
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      // Otherwise navigate to homepage
-      navigate('/');
-    }
-  };
-
-  const handleAnnouncementsClick = () => {
-    if (location.pathname === '/') {
-      // If on homepage, scroll to announcements section
-      const announcementsSection = document.getElementById('announcements-section');
-      if (announcementsSection) {
-        announcementsSection.scrollIntoView({ behavior: 'smooth' });
+      if (scrollToId) {
+        const element = document.getElementById(scrollToId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
-      // Otherwise navigate to homepage and then scroll to announcements
       navigate('/');
-      setTimeout(() => {
-        const announcementsSection = document.getElementById('announcements-section');
-        if (announcementsSection) {
-          announcementsSection.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
-    }
-  };
-
-  const handleCouncilClick = () => {
-    if (location.pathname === '/') {
-      // If on homepage, scroll to council section
-      const councilSection = document.getElementById('council-section');
-      if (councilSection) {
-        councilSection.scrollIntoView({ behavior: 'smooth' });
+      if (scrollToId) {
+        setTimeout(() => {
+          const element = document.getElementById(scrollToId);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
       }
-    } else {
-      // Otherwise navigate to homepage and then scroll to council
-      navigate('/');
-      setTimeout(() => {
-        const councilSection = document.getElementById('council-section');
-        if (councilSection) {
-          councilSection.scrollIntoView({ behavior: 'smooth' });
-        }
-      }, 100);
     }
-  };
-
-  const handleLogin = () => {
-    if(!isLoggedIn){
-      navigate('/login');
-    }
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setUser(null);
-  };
-
-  const handleSignUp = () => {
-    navigate("/signup");
-  };
-
-  const navigationItems = [
-    { 
-      text: 'Home', 
-      icon: <Home />, 
-      onClick: handleHomeClick,
-      isScroll: false
-    },
-    { 
-      text: 'Announcements', 
-      icon: <Campaign />, 
-      onClick: handleAnnouncementsClick,
-      isScroll: true,
-      sectionId: 'announcements-section'
-    },
-    { 
-      text: 'Meet the Council', 
-      icon: <Groups />, 
-      onClick: handleCouncilClick,
-      isScroll: true,
-      sectionId: 'council-section'
-    }
-  ];
-
-  const handleDrawerItemClick = (item) => {
-    item.onClick();
     setDrawerOpen(false);
   };
 
-  const toggleDrawer = (open) => () => {
-    setDrawerOpen(open);
+  const handleAuth = (type) => {
+    navigate(type === 'login' ? '/auth' : '/auth');
+    setDrawerOpen(false);
   };
 
+  // Navigation items configuration
+  const navItems = [
+    {
+      key: 'home',
+      label: 'Home',
+      icon: <HomeOutlined />,
+      onClick: () => handleNavigation('/', null)
+    },
+    {
+      key: 'announcements',
+      label: 'Announcements',
+      icon: <NotificationOutlined />,
+      onClick: () => handleNavigation('/', 'announcements-section')
+    },
+    {
+      key: 'council',
+      label: 'Council',
+      icon: <TeamOutlined />,
+      onClick: () => handleNavigation('/', 'council-section')
+    }
+  ];
+
+  const drawerItems = [
+    ...navItems,
+    isLoggedIn
+      ? {
+          key: 'profile',
+          label: 'Profile',
+          icon: <UserOutlined />,
+          onClick: () => navigate('/profile')
+        }
+      : null,
+    isLoggedIn
+      ? {
+          key: 'logout',
+          label: 'Logout',
+          icon: <LoginOutlined />,
+          onClick: () => {
+            setIsLoggedIn(false);
+            navigate('/');
+            setDrawerOpen(false);
+          }
+        }
+      : null
+  ].filter(Boolean);
+
+  // Desktop Navigation
+  const DesktopNav = () => (
+    <Space size="large">
+      {navItems.map((item) => (
+        <Button
+          key={item.key}
+          type="text"
+          icon={item.icon}
+          onClick={item.onClick}
+          style={{
+            color: COLORS.text,
+            fontWeight: 500,
+            padding: '0 8px'
+          }}
+        >
+          {item.label}
+        </Button>
+      ))}
+      
+      {isLoggedIn ? (
+        <Space size="small">
+          <Avatar
+            size="small"
+            style={{ 
+              background: COLORS.secondary,
+              color: COLORS.text,
+              cursor: 'pointer'
+            }}
+            onClick={() => navigate('/profile')}
+          >
+            {user?.name?.[0] || 'U'}
+          </Avatar>
+          <Tag
+            color={COLORS.secondary}
+            style={{ 
+              border: 'none',
+              fontSize: '10px',
+              padding: '0 6px',
+              height: '18px'
+            }}
+          >
+            {user?.role || 'Student'}
+          </Tag>
+          <Button
+            type="text"
+            size="small"
+            onClick={() => {
+              setIsLoggedIn(false);
+              navigate('/');
+            }}
+            style={{ 
+              color: `${COLORS.text}80`,
+              fontSize: '12px'
+            }}
+          >
+            Logout
+          </Button>
+        </Space>
+      ) : (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<LoginOutlined />}
+            onClick={() => handleAuth('login')}
+            style={{ 
+              color: COLORS.secondary,
+              fontWeight: 500
+            }}
+          >
+            Login / Sign Up
+          </Button>
+        </Space>
+      )}
+    </Space>
+  );
+
+  // Mobile Drawer
   const MobileDrawer = () => (
-    <Drawer anchor="right" open={drawerOpen} onClose={toggleDrawer(false)}>
-      <Box sx={{ 
-        width: 280, 
-        p: 3, 
-        bgcolor: 'primary.dark', 
-        color: 'white', 
-        height: '100%',
+    <Drawer
+      placement="right"
+      onClose={() => setDrawerOpen(false)}
+      open={drawerOpen}
+      width={280}
+      closable={false}
+      styles={{
+        body: {
+          padding: 0,
+          background: COLORS.surface,
+          color: COLORS.text,
+          display: 'flex',
+          flexDirection: 'column'
+        }
+      }}
+    >
+      <div style={{ 
+        padding: '20px',
         display: 'flex',
-        flexDirection: 'column'
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderBottom: `1px solid ${COLORS.secondary}20`
       }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h6">Menu</Typography>
-          <IconButton onClick={toggleDrawer(false)} sx={{ color: 'white' }}>
-            <Close />
-          </IconButton>
-        </Box>
-        <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', mb: 3 }} />
-        <List sx={{ flexGrow: 1 }}>
-          {navigationItems.map((item) => (
-            <ListItemButton
-              key={item.text}
-              onClick={() => handleDrawerItemClick(item)}
-              sx={{ 
-                borderRadius: 2,
-                mb: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-            >
-              <Box sx={{ mr: 2, color: 'white' }}>{item.icon}</Box>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{ color: 'white' }}
-              />
-            </ListItemButton>
-          ))}
-        </List>
-        <Divider sx={{ bgcolor: 'rgba(255,255,255,0.1)', my: 3 }} />
-        {isLoggedIn ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              p: 2, 
-              borderRadius: 2,
-              bgcolor: 'rgba(255,255,255,0.05)'
-            }}>
-              <Avatar sx={{ 
-                width: 40, 
-                height: 40, 
-                bgcolor: 'secondary.light',
-                mr: 2,
-                color: 'white'
-              }}>
-                {user?.name?.[0] || 'U'}
-              </Avatar>
-              <Box sx={{ textAlign: 'left' }}>
-                <Typography variant="body1" sx={{ fontWeight: 'medium', color: 'white' }}>
-                  {user?.name || 'User'}
-                </Typography>
-                <Chip
-                  label={user?.role || 'Student'}
-                  size="small"
-                  sx={{ 
-                    mt: 0.5,
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    height: 20
-                  }}
-                />
-              </Box>
-            </Box>
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<Person />}
-              onClick={() => {
-                toggleDrawer(false)();
-                // Navigate to profile
-              }}
-              sx={{ 
-                bgcolor: 'secondary.light',
-                '&:hover': {
-                  bgcolor: 'secondary.dark'
-                }
-              }}
-            >
-              Profile
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Login />}
-              onClick={() => {
-                toggleDrawer(false)();
-                handleLogout();
-              }}
-              sx={{ 
-                color: 'white',
-                borderColor: 'white',
-                '&:hover': {
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-            >
-              Logout
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Login />}
-              onClick={() => {
-                toggleDrawer(false)();
-                handleLogin();
-              }}
-              sx={{ 
-                color: 'white',
-                borderColor: 'white',
-                '&:hover': {
-                  borderColor: 'white',
-                  bgcolor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-            >
-              Login
-            </Button>
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<HowToReg />}
-              onClick={() => {
-                toggleDrawer(false)();
-                handleSignUp();
-              }}
-              sx={{ 
-                bgcolor: 'secondary.light',
-                '&:hover': {
-                  bgcolor: 'secondary.dark'
-                }
-              }}
-            >
-              Sign Up
-            </Button>
-          </Box>
-        )}
-      </Box>
+        <Typography.Text strong style={{ color: COLORS.text, fontSize: '16px' }}>
+          Navigation
+        </Typography.Text>
+        <Button
+          type="text"
+          icon={<CloseOutlined />}
+          onClick={() => setDrawerOpen(false)}
+          style={{ color: COLORS.text }}
+        />
+      </div>
+
+      <div style={{ flex: 1, padding: '8px 0' }}>
+        <Menu
+          mode="vertical"
+          items={drawerItems}
+          style={{ 
+            background: 'transparent',
+            border: 'none'
+          }}
+          theme="dark"
+        />
+      </div>
+
+      {!isLoggedIn && (
+        <div style={{ padding: '20px' }}>
+          <Button
+            type="primary"
+            icon={<UserAddOutlined />}
+            onClick={() => handleAuth('signup')}
+            block
+            style={{
+              background: COLORS.action,
+              border: 'none',
+              height: '40px',
+              fontWeight: 500
+            }}
+          >
+            Create Account
+          </Button>
+        </div>
+      )}
     </Drawer>
   );
 
   return (
     <>
-      <AppBar position="sticky" sx={{ 
-        bgcolor: 'primary.main',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        zIndex: theme.zIndex.drawer + 1
+      <Header style={{
+        background: COLORS.background,
+        borderBottom: `1px solid ${COLORS.secondary}20`,
+        padding: '0 24px',
+        height: '64px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        backdropFilter: 'blur(8px)',
+        backgroundColor: `${COLORS.background}dd`
       }}>
-        <Container maxWidth="lg">
-          <Toolbar sx={{ 
-            display: 'flex', 
-            justifyContent: 'space-between',
-            px: { xs: 1, sm: 2 }
-          }}>
-            {/* Left side: Logo and Site Name */}
-            <Box 
-            onClick={() => navigate("/")}
-            sx={{ 
-              display: 'flex', 
+        <div style={{
+          maxWidth: '1200px',
+          margin: '0 auto',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          {/* Logo */}
+          <Space
+            onClick={() => navigate('/')}
+            style={{ 
+              cursor: 'pointer',
+              userSelect: 'none'
+            }}
+          >
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: `linear-gradient(135deg, ${COLORS.secondary}, ${COLORS.action})`,
+              display: 'flex',
               alignItems: 'center',
-              gap: 2,
-              "&:hover": {
-                cursor: "grab"
-              }
+              justifyContent: 'center'
             }}>
-              <Box sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                bgcolor: 'white',
-                color: 'primary.main'
-              }}>
-                <School sx={{ fontSize: 24 }} />
-              </Box>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold',
-                color: 'white',
-                letterSpacing: 0.5
-              }}>
-                Student Council Portal
-              </Typography>
-            </Box>
+              <CrownOutlined style={{ 
+                fontSize: '16px',
+                color: COLORS.text 
+              }} />
+            </div>
+            <Typography.Title
+              level={5}
+              style={{
+                margin: 0,
+                color: COLORS.text,
+                fontWeight: 600,
+                lineHeight: 1
+              }}
+            >
+              Student Council
+            </Typography.Title>
+          </Space>
 
-            {/* Right side: Navigation Items */}
-            {!isMobile ? (
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 2
-              }}>
-                {navigationItems.map((item) => (
-                  <Button
-                    key={item.text}
-                    color="inherit"
-                    startIcon={item.icon}
-                    onClick={item.onClick}
-                    sx={{ 
-                      fontWeight: 'medium',
-                      color: 'white',
-                      '&:hover': {
-                        bgcolor: 'rgba(255,255,255,0.1)'
-                      }
-                    }}
-                  >
-                    {item.text}
-                  </Button>
-                ))}
-                
-                {isLoggedIn ? (
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 2,
-                    ml: 2,
-                    p: 1,
-                    borderRadius: 2,
-                    bgcolor: 'rgba(255,255,255,0.1)'
-                  }}>
-                    <Avatar sx={{ 
-                      width: 36, 
-                      height: 36, 
-                      bgcolor: 'secondary.light',
-                      color: 'white'
-                    }}>
-                      {user?.name?.[0] || 'U'}
-                    </Avatar>
-                    <Box sx={{ textAlign: 'left' }}>
-                      <Typography variant="body2" sx={{ fontWeight: 'medium', color: 'white' }}>
-                        {user?.name || 'User'}
-                      </Typography>
-                      <Chip
-                        label={user?.role || 'Student'}
-                        size="small"
-                        sx={{ 
-                          bgcolor: 'primary.light',
-                          color: 'white',
-                          fontSize: '0.6rem',
-                          height: 18
-                        }}
-                      />
-                    </Box>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<Login />}
-                      onClick={handleLogout}
-                      sx={{ 
-                        ml: 1,
-                        color: 'white',
-                        borderColor: 'white',
-                        fontSize: '0.75rem',
-                        '&:hover': {
-                          borderColor: 'white',
-                          bgcolor: 'rgba(255,255,255,0.1)'
-                        }
-                      }}
-                    >
-                      Logout
-                    </Button>
-                  </Box>
-                ) : (
-                  <Box sx={{ display: 'flex', gap: 1, ml: 2 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<Login />}
-                      onClick={handleLogin}
-                      sx={{ 
-                        color: 'white',
-                        borderColor: 'white',
-                        '&:hover': {
-                          borderColor: 'white',
-                          bgcolor: 'rgba(255,255,255,0.1)'
-                        }
-                      }}
-                    >
-                      Login
-                    </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={<HowToReg />}
-                      onClick={handleSignUp}
-                      sx={{ 
-                        bgcolor: 'secondary.light',
-                        '&:hover': {
-                          bgcolor: 'secondary.dark'
-                        }
-                      }}
-                    >
-                      Sign Up
-                    </Button>
-                  </Box>
-                )}
-              </Box>
-            ) : (
-              <IconButton 
-                color="inherit" 
-                onClick={toggleDrawer(true)}
-                sx={{ color: 'white' }}
-              >
-                <MenuIcon />
-              </IconButton>
-            )}
-          </Toolbar>
-        </Container>
-      </AppBar>
+          {/* Desktop Navigation */}
+          <div style={{ display: { xs: 'none', lg: 'block' } }}>
+            <DesktopNav />
+          </div>
+
+          {/* Mobile Menu Button */}
+          <Button
+            type="text"
+            icon={<MenuOutlined />}
+            onClick={() => setDrawerOpen(true)}
+            style={{ 
+              color: COLORS.text,
+              display: { xs: 'block', lg: 'none' }
+            }}
+          />
+        </div>
+      </Header>
       <MobileDrawer />
     </>
   );

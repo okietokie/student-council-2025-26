@@ -1,59 +1,57 @@
 import React, { useState } from 'react';
+import { 
+  Layout, 
+  Typography, 
+  Button, 
+  Card, 
+  Space, 
+  Avatar, 
+  Tag, 
+  Divider, 
+  Row, 
+  Col, 
+  Alert,
+  Grid
+} from 'antd';
 import {
-  Box,
-  Container,
-  Typography,
-  Button,
-  Card,
-  CardContent,
-  useTheme,
-  alpha,
-  Paper,
-  Avatar,
-  Divider,
-  Chip
-} from '@mui/material';
-import {
-  Handshake,
-  SentimentDissatisfied,
-  SentimentVeryDissatisfied,
-  Celebration,
-  HourglassEmpty,
-  CalendarToday,
-  Psychology,
-  ErrorOutline,
-  Gavel,
-  HowToVote,
-  TimerOff,
-  Loop,
-  ArrowBack,
-  Close,
-  ThumbDown,
-  AccessTime,
-  EventBusy,
-  EventAvailable,
-  NotInterested,
-  DoNotDisturb,
-  Block,
-  PriorityHigh,
-  QuestionMark,
-  EmojiEvents,
-  TagFaces,
-  SentimentVerySatisfied,
-  People,
-  School,
-  Warning,
-  Info,
-  CheckCircle,
-  RemoveCircle,
-  TouchApp,
-  FiberManualRecord
-} from '@mui/icons-material';
+  LeftOutlined,
+  WarningOutlined,
+  ClockCircleOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  CloseOutlined,
+  SyncOutlined,
+  CheckCircleOutlined,
+  TrophyOutlined,
+  SmileOutlined,
+  FrownOutlined,
+  MehOutlined,
+  BlockOutlined,
+  ArrowLeftOutlined,
+  FireOutlined,
+  QuestionOutlined,
+  BulbOutlined,
+  StopOutlined,
+  CheckOutlined,
+  ExclamationOutlined,
+  CrownOutlined,
+  HeartOutlined,
+  StarOutlined,
+  ThunderboltOutlined,
+  EyeOutlined,
+  LikeOutlined,
+  DislikeOutlined
+} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { COLORS } from '../utils/colors.js';
+
+const { Title, Text, Paragraph } = Typography;
+const { Content } = Layout;
+const { useBreakpoint } = Grid;
 
 export default function JoinCouncil() {
-  const theme = useTheme();
   const navigate = useNavigate();
+  const screens = useBreakpoint();
   const [clickCount, setClickCount] = useState(0);
   const [mood, setMood] = useState('neutral');
   const [showExitButton, setShowExitButton] = useState(false);
@@ -73,36 +71,28 @@ export default function JoinCouncil() {
     if (clickCount === 0) {
       return (
         <>
-          Want to know a secret? <PriorityHigh fontSize="small" />
+          Want to know a secret? <QuestionOutlined />
         </>
       );
     } else if (clickCount === 1) {
       return (
         <>
-          Still clicking? 
+          Still clicking? Seriously? <ExclamationOutlined />
         </>
       );
     } else if (clickCount === 2) {
       return (
         <>
-          Okay, you are officially obsessed 
+          Okay, you are officially obsessed <DislikeOutlined />
         </>
       );
     } else {
       return (
         <>
-          Seriously? How many times? 
+          Seriously? {clickCount} times? <ExclamationOutlined />
         </>
       );
     }
-  };
-
-  const getMainMessage = () => {
-    return (
-      <>
-        Elections Are Over! 
-      </>
-    );
   };
 
   const getSubMessage = () => {
@@ -130,353 +120,421 @@ export default function JoinCouncil() {
   const MoodIcon = () => {
     switch(mood) {
       case 'angry':
-        return (
-          <SentimentVeryDissatisfied sx={{ fontSize: 80, color: theme.palette.error.main }} />
-        );
+        return <FrownOutlined style={{ fontSize: '80px', color: COLORS.action }} />;
       case 'sad':
-        return (
-          <SentimentDissatisfied sx={{ fontSize: 80, color: theme.palette.warning.main }} />
-        );
+        return <MehOutlined style={{ fontSize: '80px', color: COLORS.secondary }} />;
       default:
-        return (
-          <SentimentVerySatisfied sx={{ fontSize: 80, color: theme.palette.primary.main }} />
-        );
+        return <SmileOutlined style={{ fontSize: '80px', color: COLORS.text }} />;
     }
   };
 
-  // Stats data with color values instead of relying on icon props
   const statsData = [
     {
-      icon: <CalendarToday />,
-      color: theme.palette.error.main,
+      icon: <CalendarOutlined />,
+      color: COLORS.action,
       label: "Elections Ended",
       value: "Last Year",
       subtext: "You missed it",
-      icon2: <ThumbDown fontSize="small" />
+      subicon: <CloseOutlined />
     },
     {
-      icon: <HourglassEmpty />,
-      color: theme.palette.warning.main,
+      icon: <ClockCircleOutlined />,
+      color: COLORS.secondary,
       label: "Next Chance",
       value: "6 Months",
       subtext: "Patience is key",
-      icon2: <AccessTime fontSize="small" />
+      subicon: <SyncOutlined />
     },
     {
-      icon: <Gavel />,
-      color: theme.palette.success.main,
+      icon: <CrownOutlined />,
+      color: COLORS.secondary,
       label: "Council Seats",
       value: "All Full",
       subtext: "Zero vacancies",
-      icon2: <People fontSize="small" />
+      subicon: <TeamOutlined />
     },
     {
-      icon: <Warning />,
-      color: theme.palette.info.main,
+      icon: <ExclamationOutlined />,
+      color: COLORS.action,
       label: "Your Timing",
       value: "Terrible",
       subtext: "Absolutely awful",
-      icon2: <ErrorOutline fontSize="small" />
+      subicon: <QuestionOutlined />
     }
   ];
 
+  const getButtonText = () => {
+    if (clickCount === 0) return "Try to Join Council";
+    if (clickCount === 1) return "Try Again";
+    if (clickCount === 2) return "Seriously, Stop";
+    if (clickCount === 3) return "Okay You Win";
+    return "Done";
+  };
+
+  const getButtonIcon = () => {
+    if (clickCount === 0) return <TrophyOutlined />;
+    if (clickCount === 1) return <SyncOutlined />;
+    if (clickCount === 2) return <StopOutlined />;
+    if (clickCount === 3) return <HeartOutlined />;
+    return <CloseOutlined />;
+  };
+
   return (
-    <Box sx={{ 
+    <Layout style={{ 
       minHeight: '100vh',
-      background: `linear-gradient(135deg, 
-        ${alpha(theme.palette.warning.light, 0.1)} 0%, 
-        ${alpha(theme.palette.error.light, 0.05)} 100%)`,
-      py: 8,
+      background: COLORS.background,
       position: 'relative',
       overflow: 'hidden'
     }}>
       {/* Decorative Elements */}
-      <Box sx={{ 
+      <div style={{ 
         position: 'absolute',
         top: 50,
         left: 50,
-        color: alpha(theme.palette.error.main, 0.1)
+        color: `${COLORS.action}15`,
+        fontSize: '120px',
+        transform: 'rotate(45deg)',
+        opacity: 0.3
       }}>
-        <DoNotDisturb sx={{ fontSize: 100, transform: 'rotate(45deg)' }} />
-      </Box>
+        <BlockOutlined />
+      </div>
       
-      <Box sx={{ 
+      <div style={{ 
         position: 'absolute',
         bottom: 50,
         right: 50,
-        color: alpha(theme.palette.warning.main, 0.1)
+        color: `${COLORS.secondary}15`,
+        fontSize: '120px',
+        transform: 'rotate(-45deg)',
+        opacity: 0.3
       }}>
-        <TimerOff sx={{ fontSize: 100, transform: 'rotate(-45deg)' }} />
-      </Box>
+        <ClockCircleOutlined />
+      </div>
 
-      <Container maxWidth="md">
+      <Content style={{ 
+        padding: screens.xs ? '40px 20px' : '80px 30px',
+        maxWidth: '1200px',
+        margin: '0 auto'
+      }}>
         {/* Back Button */}
         <Button
-          startIcon={<ArrowBack />}
+          icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
-          sx={{ 
-            mb: 4,
-            color: 'text.secondary',
-            '&:hover': {
-              bgcolor: alpha(theme.palette.primary.main, 0.1)
-            }
+          type="text"
+          style={{ 
+            marginBottom: '32px',
+            color: `${COLORS.text}CC`
           }}
         >
           Back to Reality
         </Button>
 
-        <Card sx={{ 
-          borderRadius: 3,
-          overflow: 'visible',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.1)',
-          border: `2px dashed ${alpha(theme.palette.warning.main, 0.3)}`,
-          position: 'relative',
-          mt: 2
-        }}>
+        <Card
+          style={{
+            borderRadius: '16px',
+            border: `2px dashed ${COLORS.action}40`,
+            background: COLORS.surface,
+            position: 'relative',
+            marginTop: '20px',
+            overflow: 'visible'
+          }}
+          bodyStyle={{ 
+            padding: screens.xs ? '24px' : '48px'
+          }}
+        >
           {/* Warning Banner */}
-          <Paper sx={{ 
+          <div style={{ 
             position: 'absolute',
-            top: -20,
+            top: '-20px',
             left: '50%',
             transform: 'translateX(-50%)',
-            px: 3,
-            py: 1,
-            bgcolor: theme.palette.error.main,
-            color: 'white',
-            borderRadius: 2,
+            padding: '8px 24px',
+            background: COLORS.action,
+            color: COLORS.text,
+            borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: 1,
-            zIndex: 1
+            gap: '8px',
+            zIndex: 1,
+            whiteSpace: 'nowrap'
           }}>
-            <ErrorOutline />
-            <Typography variant="subtitle2" fontWeight="bold">
+            <WarningOutlined />
+            <Text strong style={{ color: COLORS.text, fontSize: '14px' }}>
               SASSY MESSAGE INCOMING
-            </Typography>
-          </Paper>
+            </Text>
+          </div>
 
-          <CardContent sx={{ p: 6 }}>
-            {/* Header */}
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center',
-              textAlign: 'center',
-              mb: 6
+          {/* Header */}
+          <div style={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center',
+            textAlign: 'center',
+            marginBottom: '48px'
+          }}>
+            <div style={{ 
+              position: 'relative',
+              marginBottom: '32px'
             }}>
-              <Box sx={{ 
-                position: 'relative',
-                mb: 4
-              }}>
-                <Avatar sx={{ 
-                  width: 120,
-                  height: 120,
-                  bgcolor: alpha(theme.palette.warning.main, 0.1),
-                  border: `4px solid ${alpha(theme.palette.warning.main, 0.3)}`
-                }}>
-                  <MoodIcon />
-                </Avatar>
-                
-                {clickCount > 0 && (
-                  <Chip
-                    icon={<FiberManualRecord />}
-                    label={`Clicked ${clickCount} time${clickCount !== 1 ? 's' : ''}`}
-                    color="warning"
-                    size="small"
-                    sx={{
-                      position: 'absolute',
-                      top: -10,
-                      right: -10,
-                      fontWeight: 'bold'
-                    }}
-                  />
-                )}
-              </Box>
-              
-              <Typography variant="h1" sx={{ 
-                fontWeight: 'bold', 
-                mb: 3,
-                color: theme.palette.error.dark,
-                fontSize: { xs: '2.5rem', md: '3.5rem' }
-              }}>
-                <Block sx={{ fontSize: 'inherit', mr: 1, verticalAlign: 'middle' }} />
-                Elections Are Over!
-              </Typography>
-              
-              <Typography variant="h5" sx={{ 
-                color: 'text.secondary', 
-                mb: 4,
-                maxWidth: 600,
-                lineHeight: 1.6,
-                fontStyle: 'italic'
-              }}>
-                {getSubMessage()}
-              </Typography>
-            </Box>
-
-            <Divider sx={{ my: 4 }}>
-              <Chip 
-                icon={<Psychology />} 
-                label="SASS LEVEL: EXPERT" 
-                color="warning" 
-                variant="outlined"
-              />
-            </Divider>
-
-            {/* Interactive Section */}
-            <Box sx={{ 
-              mb: 6,
-              p: 4,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.info.light, 0.05),
-              border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-              textAlign: 'center'
-            }}>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 'bold', 
-                mb: 2,
-                color: theme.palette.info.dark
-              }}>
-                {getSassyMessage()}
-              </Typography>
-              
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-                This button does absolutely nothing useful <RemoveCircle fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} /> 
-                But go ahead, click it anyway <TouchApp fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} />
-              </Typography>
-              
-              <Button
-                variant="contained"
-                color="warning"
-                size="large"
-                startIcon={clickCount > 2 ? <NotInterested /> : <HowToVote />}
-                endIcon={clickCount > 0 ? <Loop /> : null}
-                onClick={handleButtonClick}
-                disabled={clickCount > 3}
-                sx={{ 
-                  px: 6,
-                  py: 2,
-                  borderRadius: 3,
-                  fontSize: '1.1rem',
-                  transform: clickCount > 0 ? 'scale(0.95)' : 'none',
-                  transition: 'all 0.3s ease'
+              <Avatar
+                size={120}
+                style={{ 
+                  background: `${COLORS.action}20`,
+                  border: `4px solid ${COLORS.action}40`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
-                {clickCount === 0 && "Try to Join Council"}
-                {clickCount === 1 && "Try Again"}
-                {clickCount === 2 && "Seriously, Stop"}
-                {clickCount === 3 && "Okay You Win"}
-                {clickCount > 3 && "Done"}
-              </Button>
+                <MoodIcon />
+              </Avatar>
               
-              {showExitButton && (
-                <Button
-                  startIcon={<Close />}
-                  onClick={() => navigate('/')}
-                  sx={{ 
-                    mt: 3,
-                    color: 'text.secondary'
+              {clickCount > 0 && (
+                <Tag
+                  icon={<FireOutlined />}
+                  color={COLORS.action}
+                  style={{
+                    position: 'absolute',
+                    top: '-10px',
+                    right: '-10px',
+                    fontWeight: 'bold',
+                    borderRadius: '20px',
+                    padding: '4px 12px',
+                    fontSize: '12px',
+                    background: COLORS.action,
+                    color: COLORS.text,
+                    border: 'none'
                   }}
                 >
-                  I will leave now
-                </Button>
+                  Clicked {clickCount} time{clickCount !== 1 ? 's' : ''}
+                </Tag>
               )}
-            </Box>
-
-            {/* Stats Section - FIXED VERSION */}
-            <Box sx={{ 
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: 'repeat(4, 1fr)' },
-              gap: 3,
-              mb: 6
+            </div>
+            
+            <Title level={1} style={{ 
+              marginBottom: '24px',
+              color: COLORS.action,
+              fontSize: screens.xs ? '2.5rem' : '3.5rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px'
             }}>
-              {statsData.map((stat, index) => (
-                <Paper
-                  key={index}
-                  sx={{ 
-                    p: 3,
-                    borderRadius: 2,
+              <BlockOutlined />
+              Elections Are Over!
+            </Title>
+            
+            <Title level={4} style={{ 
+              color: `${COLORS.text}CC`, 
+              marginBottom: 0,
+              maxWidth: '600px',
+              lineHeight: 1.6,
+              fontStyle: 'italic',
+              fontWeight: 400
+            }}>
+              {getSubMessage()}
+            </Title>
+          </div>
+
+          <Divider style={{ 
+            borderColor: `${COLORS.secondary}40`,
+            margin: '40px 0'
+          }}>
+            <Tag 
+              icon={<BulbOutlined />} 
+              color={COLORS.secondary}
+              style={{ 
+                borderRadius: '20px',
+                padding: '8px 16px',
+                fontSize: '14px',
+                background: `${COLORS.secondary}20`,
+                border: `1px solid ${COLORS.secondary}40`,
+                color: COLORS.secondary
+              }}
+            >
+              SASS LEVEL: EXPERT
+            </Tag>
+          </Divider>
+
+          {/* Interactive Section */}
+          <div style={{ 
+            marginBottom: '48px',
+            padding: '32px',
+            borderRadius: '12px',
+            background: `${COLORS.background}`,
+            border: `1px solid ${COLORS.secondary}30`,
+            textAlign: 'center'
+          }}>
+            <Title level={4} style={{ 
+              marginBottom: '16px',
+              color: COLORS.secondary,
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              {getSassyMessage()}
+            </Title>
+            
+            <Paragraph style={{ 
+              marginBottom: '32px',
+              color: `${COLORS.text}CC`,
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}>
+              This button does absolutely nothing useful
+              <QuestionOutlined />
+              But go ahead, click it anyway
+              <EyeOutlined />
+            </Paragraph>
+            
+            <Button
+              type="primary"
+              size="large"
+              icon={getButtonIcon()}
+              onClick={handleButtonClick}
+              disabled={clickCount > 3}
+              style={{ 
+                padding: '16px 48px',
+                height: 'auto',
+                borderRadius: '12px',
+                fontSize: '18px',
+                fontWeight: 600,
+                background: COLORS.action,
+                border: 'none',
+                transform: clickCount > 0 ? 'scale(0.95)' : 'none',
+                transition: 'all 0.3s ease',
+                boxShadow: `0 4px 20px ${COLORS.action}40`
+              }}
+            >
+              {getButtonText()}
+            </Button>
+            
+            {showExitButton && (
+              <Button
+                icon={<CloseOutlined />}
+                onClick={() => navigate('/')}
+                type="text"
+                style={{ 
+                  marginTop: '24px',
+                  color: `${COLORS.text}CC`
+                }}
+              >
+                I will leave now
+              </Button>
+            )}
+          </div>
+
+          {/* Stats Section */}
+          <Row gutter={[24, 24]} style={{ marginBottom: '48px' }}>
+            {statsData.map((stat, index) => (
+              <Col xs={24} sm={12} lg={6} key={index}>
+                <Card
+                  style={{
+                    height: '100%',
+                    borderRadius: '12px',
                     textAlign: 'center',
-                    bgcolor: alpha(stat.color, 0.05),
-                    border: `1px solid ${alpha(stat.color, 0.1)}`
+                    background: `${stat.color}10`,
+                    border: `1px solid ${stat.color}30`
                   }}
+                  bodyStyle={{ padding: '24px' }}
                 >
-                  <Box sx={{ mb: 2, color: stat.color }}>
-                    {React.cloneElement(stat.icon, { sx: { fontSize: 40, color: stat.color } })}
-                  </Box>
-                  <Typography variant="h6" fontWeight="bold">
+                  <div style={{ 
+                    marginBottom: '16px',
+                    color: stat.color,
+                    fontSize: '40px'
+                  }}>
+                    {stat.icon}
+                  </div>
+                  <Title level={3} style={{ 
+                    margin: '8px 0',
+                    color: COLORS.text,
+                    fontWeight: 700
+                  }}>
                     {stat.value}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  </Title>
+                  <Text style={{ 
+                    color: `${COLORS.text}CC`,
+                    display: 'block',
+                    marginBottom: '8px'
+                  }}>
                     {stat.label}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ 
+                  </Text>
+                  <Text style={{ 
+                    color: `${COLORS.text}99`,
                     fontStyle: 'italic',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: 0.5,
-                    mt: 0.5
+                    gap: '6px',
+                    fontSize: '12px'
                   }}>
-                    {stat.subtext} {stat.icon2}
-                  </Typography>
-                </Paper>
-              ))}
-            </Box>
+                    {stat.subtext}
+                    <span style={{ fontSize: '10px' }}>
+                      {stat.subicon}
+                    </span>
+                  </Text>
+                </Card>
+              </Col>
+            ))}
+          </Row>
 
-            {/* Funny Tip */}
-            <Paper sx={{ 
-              p: 4,
-              borderRadius: 3,
-              bgcolor: alpha(theme.palette.success.light, 0.05),
-              border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
-                <TagFaces sx={{ 
-                  fontSize: 40, 
-                  color: theme.palette.success.main,
-                  mt: 0.5
-                }} />
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 1 }}>
-                    {getFunnyTip()}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    While you wait, maybe work on your campaign speech 
-                    <School fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} /> 
-                    Just a thought 
-                    <Psychology fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} />
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
+          {/* Funny Tip */}
+          <Alert
+            message={
+              <div style={{ padding: '8px 0' }}>
+                <Title level={5} style={{ margin: '0 0 8px 0', color: COLORS.text, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <StarOutlined />
+                  {getFunnyTip()}
+                </Title>
+                <Text style={{ color: `${COLORS.text}CC`, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  While you wait, maybe work on your campaign speech
+                  <ThunderboltOutlined />
+                  Just a thought
+                  <BulbOutlined />
+                </Text>
+              </div>
+            }
+            type="info"
+            icon={<SmileOutlined />}
+            style={{
+              marginBottom: '48px',
+              borderRadius: '12px',
+              background: `${COLORS.secondary}10`,
+              border: `1px solid ${COLORS.secondary}30`
+            }}
+          />
 
-            {/* Action Buttons */}
-            <Box sx={{ 
-              display: 'flex', 
-              gap: 3, 
-              justifyContent: 'center', 
-              mt: 6,
-              flexWrap: 'wrap'
-            }}>
+          {/* Action Buttons */}
+          <Row gutter={[16, 16]} justify="center" style={{ marginBottom: '48px' }}>
+            <Col xs={24} md={8}>
               <Button
-                variant="contained"
-                color="primary"
-                startIcon={<EventAvailable />}
+                type="primary"
+                icon={<CheckOutlined />}
                 onClick={() => navigate('/')}
-                sx={{ 
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 2
+                block
+                style={{
+                  padding: '16px',
+                  height: 'auto',
+                  borderRadius: '8px',
+                  background: COLORS.secondary,
+                  border: 'none',
+                  fontWeight: 500
                 }}
               >
                 Attend Events Instead
               </Button>
-              
+            </Col>
+            
+            <Col xs={24} md={8}>
               <Button
-                variant="outlined"
-                color="secondary"
-                startIcon={<EmojiEvents />}
+                type="default"
+                icon={<TeamOutlined />}
                 onClick={() => {
                   navigate('/');
                   setTimeout(() => {
@@ -486,85 +544,107 @@ export default function JoinCouncil() {
                     }
                   }, 100);
                 }}
-                sx={{ 
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 2
+                block
+                style={{
+                  padding: '16px',
+                  height: 'auto',
+                  borderRadius: '8px',
+                  borderColor: COLORS.secondary,
+                  color: COLORS.secondary,
+                  fontWeight: 500
                 }}
               >
                 Meet Current Council
               </Button>
-              
+            </Col>
+            
+            <Col xs={24} md={8}>
               <Button
-                variant="outlined"
-                color="error"
-                startIcon={<DoNotDisturb />}
+                type="default"
+                icon={<BlockOutlined />}
                 onClick={() => navigate('/')}
-                sx={{ 
-                  px: 4,
-                  py: 1.5,
-                  borderRadius: 2
+                block
+                style={{
+                  padding: '16px',
+                  height: 'auto',
+                  borderRadius: '8px',
+                  borderColor: COLORS.action,
+                  color: COLORS.action,
+                  fontWeight: 500
                 }}
               >
                 Accept Defeat
               </Button>
-            </Box>
-          </CardContent>
+            </Col>
+          </Row>
 
           {/* Footer */}
-          <Paper sx={{ 
-            py: 3,
-            px: 4,
-            bgcolor: alpha(theme.palette.grey[900], 0.8),
-            color: 'white',
-            borderTop: `1px solid ${alpha('#fff', 0.1)}`,
-            textAlign: 'center'
+          <div style={{ 
+            padding: '24px',
+            background: `${COLORS.background}CC`,
+            borderTop: `1px solid ${COLORS.secondary}30`,
+            borderRadius: '0 0 14px 14px',
+            textAlign: 'center',
+            backdropFilter: 'blur(10px)'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-              <PriorityHigh sx={{ fontSize: 16 }} />
-              <Typography variant="body2">
-                This page contains pure, unadulterated sass
-              </Typography>
-              <PriorityHigh sx={{ fontSize: 16 }} />
-            </Box>
-            <Typography variant="caption" sx={{ opacity: 0.8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-              No council members were harmed 
-              <CheckCircle fontSize="small" sx={{ mx: 0.5 }} />
-              Except maybe your hopes 
-              <SentimentDissatisfied fontSize="small" sx={{ mx: 0.5 }} />
-            </Typography>
-          </Paper>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <ExclamationOutlined style={{ color: `${COLORS.text}CC`, fontSize: '16px' }} />
+                <Text style={{ color: `${COLORS.text}CC`, fontSize: '14px' }}>
+                  This page contains pure, unadulterated sass
+                </Text>
+                <ExclamationOutlined style={{ color: `${COLORS.text}CC`, fontSize: '16px' }} />
+              </div>
+              <Text style={{ 
+                color: `${COLORS.text}99`, 
+                fontSize: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}>
+                <span>No council members were harmed</span>
+                <CheckCircleOutlined style={{ fontSize: '12px' }} />
+                <span>Except maybe your hopes</span>
+                <FrownOutlined style={{ fontSize: '12px' }} />
+              </Text>
+            </Space>
+          </div>
         </Card>
 
         {/* Easter Egg */}
         {clickCount > 5 && (
-          <Paper sx={{ 
-            mt: 4,
-            p: 3,
-            borderRadius: 3,
-            bgcolor: alpha(theme.palette.error.main, 0.1),
-            border: `2px solid ${theme.palette.error.main}`,
-            textAlign: 'center'
-          }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
-              <Celebration sx={{ color: theme.palette.error.main }} />
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: theme.palette.error.main }}>
-                CONGRATULATIONS
-              </Typography>
-              <Celebration sx={{ color: theme.palette.error.main }} />
-            </Box>
-            <Typography>
-              You have unlocked the Persistently Hopeless achievement
-            </Typography>
-            <Typography variant="caption" sx={{ display: 'block', mt: 1, fontStyle: 'italic' }}>
-              That is not a real achievement 
-              <QuestionMark fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} />
-              Please stop clicking 
-              <Close fontSize="small" sx={{ verticalAlign: 'middle', mx: 0.5 }} />
-            </Typography>
-          </Paper>
+          <Alert
+            message={
+              <Space direction="vertical" size="small" style={{ textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                  <FireOutlined style={{ color: COLORS.action, fontSize: '24px' }} />
+                  <Title level={4} style={{ margin: 0, color: COLORS.action }}>
+                    CONGRATULATIONS
+                  </Title>
+                  <FireOutlined style={{ color: COLORS.action, fontSize: '24px' }} />
+                </div>
+                <Text style={{ color: COLORS.text, marginBottom: '4px' }}>
+                  You have unlocked the Persistently Hopeless achievement
+                </Text>
+                <Text style={{ color: `${COLORS.text}99`, fontStyle: 'italic', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                  That is not a real achievement
+                  <QuestionOutlined style={{ fontSize: '10px' }} />
+                  Please stop clicking
+                  <CloseOutlined style={{ fontSize: '10px' }} />
+                </Text>
+              </Space>
+            }
+            type="warning"
+            style={{
+              marginTop: '32px',
+              borderRadius: '12px',
+              background: `${COLORS.action}10`,
+              border: `2px solid ${COLORS.action}`
+            }}
+          />
         )}
-      </Container>
-    </Box>
+      </Content>
+    </Layout>
   );
 }

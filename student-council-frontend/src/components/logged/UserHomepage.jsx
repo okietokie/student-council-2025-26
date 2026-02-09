@@ -1,46 +1,43 @@
-import React, { useEffect, useState, Suspense, useRef, useMemo } from 'react';
-import { 
-  Box, 
-  Typography,
-  useTheme,
-  alpha,
-  CircularProgress,
-  Chip,
-  Divider,
-  Avatar,
-  IconButton,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button
-} from '@mui/material';
-import { 
-  School, 
-  Groups,
-  Person,
-  Email,
-  Class as ClassIcon,
-  CalendarToday,
-  Star,
-  Edit,
-  PhotoCamera,
-  Delete,
-  Check,
-  Close
-} from '@mui/icons-material';
+import React, { useEffect, useState, Suspense, useRef } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
+import { 
+  Card, 
+  Typography, 
+  Avatar, 
+  Tag, 
+  Divider, 
+  Space, 
+  Row, 
+  Col, 
+  Button, 
+  Progress,
+  Modal,
+  message,
+  Alert,
+  Badge,
+  Grid,
+  Skeleton,
+  Spin
+} from 'antd';
+import {
+  UserOutlined,
+  MailOutlined,
+  BookOutlined,
+  CalendarOutlined,
+  TeamOutlined,
+  DeleteOutlined,
+  CameraOutlined,
+  LoadingOutlined,
+  CheckCircleOutlined
+} from '@ant-design/icons';
 import axiosClient from '../../api/axiosClient';
+import { COLORS } from '../../utils/colors';
 
-function ChecklistModel({ url }) {
-  // Use the full URL path assuming models are in public/models folder
-  const { scene } = useGLTF(url);
-  return <primitive object={scene} scale={3} position={[0, 0, 0]} rotation={[0, 0, 0]} />;
-}
+const { Title, Text } = Typography;
+const { useBreakpoint } = Grid;
 
+// Models array - same as yours
 const models = [
   {
     url: "/models/checklist.glb",
@@ -92,34 +89,101 @@ const models = [
   }
 ];
 
+// 3D Model Loader Component
+function Model({ url }) {
+  const { scene } = useGLTF(url);
+  return <primitive object={scene} scale={3} position={[0, 0, 0]} rotation={[0, 0, 0]} />;
+}
+
 // Loading fallback for 3D
 function ThreeLoader() {
   return (
-    <Box sx={{ 
+    <div style={{ 
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      height: 400 
+      height: '100%',
+      background: COLORS.surface
     }}>
-      <CircularProgress size={30} />
-    </Box>
+      <Spin size="large" />
+    </div>
   );
 }
 
-export default function UserHomepage() {
+// 3D Model Viewer Component
+const ModelViewer = ({ modelUrl, description }) => {
+  return (
+    <div style={{
+      height: '400px',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      background: COLORS.surface,
+      position: 'relative'
+    }}>
+      <Suspense fallback={<ThreeLoader />}>
+        <Canvas 
+          camera={{ position: [0, 2, 5], fov: 50 }}
+          style={{ background: COLORS.background }}
+        >
+          <ambientLight intensity={0.6} />
+          <directionalLight position={[5, 5, 5]} intensity={1} />
+          <pointLight position={[-5, -5, -5]} intensity={0.5} />
+          
+          <Suspense fallback={null}>
+            <Model url={modelUrl}/>
+          </Suspense>
+          
+          <OrbitControls 
+            enableZoom={true}
+            enablePan={true}
+            maxPolarAngle={Math.PI}
+            minPolarAngle={0}
+            autoRotate
+            autoRotateSpeed={0.5}
+            enableDamping
+            dampingFactor={0.05}
+          />
+          
+          <Environment preset="city" />
+        </Canvas>
+      </Suspense>
+      
+      <div style={{ 
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: '12px 16px',
+        background: 'rgba(18, 24, 27, 0.8)',
+        backdropFilter: 'blur(4px)',
+        borderTop: `1px solid ${COLORS.secondary}30`
+      }}>
+        <Text style={{ 
+          color: COLORS.text, 
+          fontSize: '12px',
+          display: 'block',
+          textAlign: 'center'
+        }}>
+          Drag to rotate • Scroll to zoom • Model: {description}
+        </Text>
+      </div>
+    </div>
+  );
+};
+
+const UserHomepage = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewImage, setPreviewImage] = useState('');
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [selectedModel, setSelectedModel] = useState(null);
   const fileInputRef = useRef(null);
-  const theme = useTheme();
+  const screens = useBreakpoint();
+  const isMobile = !screens.md;
 
-  // Initialize random model on component mount
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * models.length);
     setSelectedModel(models[randomIndex]);
@@ -127,61 +191,26 @@ export default function UserHomepage() {
 
   const fetchUser = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
       const res = await axiosClient.get("/user/get-user-data", {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (res?.data?.success) {
-        setUser(res?.data?.user);
+        setUser(res.data.user);
+      } else {
+        message.error('Failed to fetch user data');
       }
     } catch (error) {
-      console.error(error);
-      showSnackbar('Failed to fetch user data', 'error');
+      console.error('Fetch user error:', error);
+      message.error('Failed to load user data');
     } finally {
       setLoading(false);
     }
   };
 
-  const showSnackbar = (message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  };
-
-  const handleAvatarClick = () => {
-    if (!uploading) {
-      setIsEditingAvatar(true);
-    }
-  };
-
-  const handleFileSelect = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    // Validate file type
-    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-      showSnackbar('Please select a valid image file (JPEG, PNG, GIF, WebP)', 'error');
-      return;
-    }
-
-    // Validate file size (max 2MB for Cloudflare R2)
-    if (file.size > 2 * 1024 * 1024) {
-      showSnackbar('File size should be less than 2MB for Cloudflare R2', 'error');
-      return;
-    }
-
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setPreviewUrl(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Show preview instead of auto-uploading
-    // User will click confirm to upload
-  };
-
-  const uploadAvatar = async (file) => {
+  const handleAvatarUpload = async (file) => {
     try {
       setUploading(true);
       setUploadProgress(0);
@@ -203,35 +232,21 @@ export default function UserHomepage() {
       });
 
       if (response.data.success) {
-        // Update user with new avatar - add cache buster
-        const avatarUrl = response.data.avatarUrl || response.data.avatar;
-        const timestamp = Date.now();
-        const updatedAvatarUrl = avatarUrl.includes('?') 
-          ? `${avatarUrl}&v=${timestamp}`
-          : `${avatarUrl}?v=${timestamp}`;
-        
-        setUser(prev => ({ ...prev, avatar: updatedAvatarUrl }));
-        showSnackbar('Avatar updated successfully!', 'success');
-        resetAvatarEdit();
+        // Update the user data with the new avatar
+        await fetchUser(); // Refresh user data to get updated avatar
+        message.success('Avatar updated successfully!');
+        setPreviewVisible(false);
+        setPreviewImage('');
       } else {
-        showSnackbar(response.data.message || 'Failed to upload avatar', 'error');
+        message.error(response.data.message || 'Failed to upload avatar');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      if (error.response?.data?.message) {
-        showSnackbar(error.response.data.message, 'error');
-      } else {
-        showSnackbar('Failed to upload avatar. Please try again.', 'error');
-      }
+      const errorMsg = error.response?.data?.message || 'Failed to upload avatar. Please try again.';
+      message.error(errorMsg);
     } finally {
       setUploading(false);
       setUploadProgress(0);
-    }
-  };
-
-  const confirmUpload = () => {
-    if (fileInputRef.current?.files?.[0] && previewUrl) {
-      uploadAvatar(fileInputRef.current.files[0]);
     }
   };
 
@@ -240,36 +255,82 @@ export default function UserHomepage() {
       setUploading(true);
       const token = localStorage.getItem("token");
       
+      // Log to debug
+      console.log('Deleting avatar with token:', token ? 'Token present' : 'No token');
+      
       const response = await axiosClient.delete('/user/delete-avatar', {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
+      console.log('Delete response:', response.data);
+
       if (response.data.success) {
-        setUser(prev => ({ ...prev, avatar: null }));
-        showSnackbar('Avatar removed successfully!', 'success');
-        setDeleteDialogOpen(false);
-        resetAvatarEdit();
+        await fetchUser();
+        message.success('Avatar removed successfully!');
+        setDeleteModalVisible(false);
       } else {
-        showSnackbar(response.data.message || 'Failed to remove avatar', 'error');
+        message.error(response.data.message || 'Failed to remove avatar');
       }
     } catch (error) {
       console.error('Delete error:', error);
-      showSnackbar('Failed to remove avatar. Please try again.', 'error');
+      console.error('Delete error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      if (error.response?.status === 400) {
+        message.error(error.response.data?.message || 'No avatar to delete or invalid request');
+      } else {
+        message.error('Failed to remove avatar. Please try again.');
+      }
     } finally {
       setUploading(false);
     }
   };
 
-  const resetAvatarEdit = () => {
-    setIsEditingAvatar(false);
-    setPreviewUrl(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  // Handle file selection
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      message.error('Please select a valid image file (JPEG, PNG, GIF, WebP)');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      message.error('File size should be less than 2MB');
+      return;
+    }
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setPreviewImage(e.target.result);
+      setPreviewVisible(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Handle avatar click
+  const handleAvatarClick = () => {
+    if (!uploading) {
+      fileInputRef.current.click();
     }
   };
 
-  const handleFileInputClick = () => {
-    fileInputRef.current.click();
+  // Confirm upload
+  const confirmUpload = () => {
+    if (fileInputRef.current?.files?.[0] && previewImage) {
+      handleAvatarUpload(fileInputRef.current.files[0]);
+    }
   };
 
   useEffect(() => { 
@@ -278,454 +339,411 @@ export default function UserHomepage() {
 
   if (loading) {
     return (
-      <Box sx={{ 
+      <div style={{ 
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center',
-        minHeight: '100vh'
+        minHeight: '100vh',
+        background: COLORS.background
       }}>
-        <CircularProgress size={60} />
-      </Box>
+        <Skeleton active paragraph={{ rows: 8 }} />
+      </div>
     );
   }
 
+  const isCouncil = user?.role === "STUDENT_COUNCIL";
+
   return (
-    <Box sx={{ 
+    <div style={{ 
       minHeight: '100vh',
-      display: 'flex',
-      flexDirection: { xs: 'column', md: 'row' },
-      alignItems: 'center',
-      justifyContent: 'center',
-      p: 3,
-      gap: { xs: 3, md: 6 },
-      background: `linear-gradient(135deg, 
-        ${alpha(theme.palette.primary.main, 0.03)} 0%, 
-        ${alpha(theme.palette.secondary.main, 0.03)} 100%)`
+      background: COLORS.background,
+      padding: isMobile ? '20px 16px' : '40px 30px'
     }}>
-      {/* Left side - User Info */}
-      <Box sx={{ 
-        flex: 1,
-        maxWidth: 500,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2
+      <div style={{ 
+        maxWidth: '1200px',
+        margin: '0 auto'
       }}>
-        {/* Profile Header with Avatar */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 2 }}>
-          <Box sx={{ position: 'relative' }}>
-            <Avatar
-              src={previewUrl || (user?.avatar ? `${user.avatar}?v=${Date.now()}` : null)}
-              sx={{ 
-                width: 120, 
-                height: 120, 
-                fontSize: '3rem',
-                cursor: uploading ? 'not-allowed' : 'pointer',
-                border: `4px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                boxShadow: theme.shadows[4],
-                opacity: uploading ? 0.7 : 1,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  borderColor: isEditingAvatar 
-                    ? theme.palette.warning.main 
-                    : theme.palette.primary.main,
-                  transform: uploading ? 'none' : 'scale(1.05)'
-                }
-              }}
-              onClick={handleAvatarClick}
-            >
-              {(!previewUrl && !user?.avatar) && user?.name?.charAt(0)}
-            </Avatar>
-            
-            {isEditingAvatar && !uploading && (
-              <Box sx={{
-                position: 'absolute',
-                top: -10,
-                right: -10,
-                bgcolor: theme.palette.background.paper,
-                borderRadius: '50%',
-                p: 0.5,
-                boxShadow: theme.shadows[3],
-                display: 'flex',
-                gap: 0.5,
-                zIndex: 2
-              }}>
-                <IconButton
-                  size="small"
-                  onClick={handleFileInputClick}
-                  sx={{ 
-                    bgcolor: theme.palette.primary.main,
-                    color: 'white',
-                    '&:hover': { bgcolor: theme.palette.primary.dark }
-                  }}
-                  title="Upload new avatar"
+        {/* Welcome Header */}
+        <Card
+          style={{
+            marginBottom: '30px',
+            background: COLORS.surface,
+            border: `1px solid ${COLORS.secondary}30`,
+            borderRadius: '16px'
+          }}
+          bodyStyle={{ padding: isMobile ? '20px' : '30px' }}
+        >
+          <Row gutter={[30, 30]} align="middle">
+            <Col xs={24} md={6} style={{ textAlign: 'center' }}>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <Badge
+                  dot
+                  color={user?.onlineStatus === 'active' ? '#52c41a' : '#f5222d'}
+                  offset={[-5, 60]}
                 >
-                  <PhotoCamera fontSize="small" />
-                </IconButton>
-                
-                {user?.avatar && (
-                  <IconButton
-                    size="small"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    sx={{ 
-                      bgcolor: theme.palette.error.main,
-                      color: 'white',
-                      '&:hover': { bgcolor: theme.palette.error.dark }
+                  <Avatar
+                    size={isMobile ? 80 : 120}
+                    src={user?.avatar ? `${user.avatar}?v=${Date.now()}` : null}
+                    icon={!user?.avatar && <UserOutlined />}
+                    style={{
+                      background: COLORS.secondary,
+                      border: `4px solid ${COLORS.secondary}40`,
+                      cursor: uploading ? 'not-allowed' : 'pointer',
+                      opacity: uploading ? 0.7 : 1
                     }}
-                    title="Remove avatar"
-                  >
-                    <Delete fontSize="small" />
-                  </IconButton>
+                    onClick={handleAvatarClick}
+                  />
+                </Badge>
+                
+                {/* Camera icon overlay */}
+                {!uploading && (
+                  <Button
+                    type="primary"
+                    shape="circle"
+                    size="small"
+                    icon={<CameraOutlined />}
+                    style={{
+                      position: 'absolute',
+                      bottom: '5px',
+                      right: '5px',
+                      background: COLORS.action,
+                      border: `2px solid ${COLORS.surface}`,
+                      cursor: 'pointer'
+                    }}
+                    onClick={handleAvatarClick}
+                  />
+                )}
+              </div>
+              
+              {uploading && (
+                <div style={{ marginTop: '16px' }}>
+                  <Progress 
+                    percent={uploadProgress} 
+                    size="small" 
+                    strokeColor={COLORS.secondary}
+                  />
+                  <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                    Uploading...
+                  </Text>
+                </div>
+              )}
+            </Col>
+            
+            <Col xs={24} md={18}>
+              <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <div>
+                  <Title level={isMobile ? 3 : 2} style={{ 
+                    margin: 0, 
+                    color: COLORS.text
+                  }}>
+                    Welcome, {user?.name?.split(' ')[0] || 'User'}
+                  </Title>
+                  <Space size="small" style={{ marginTop: '8px' }}>
+                    <Tag 
+                      color={isCouncil ? COLORS.action : COLORS.secondary}
+                      icon={isCouncil ? <TeamOutlined /> : <UserOutlined />}
+                      style={{ 
+                        borderRadius: '20px',
+                        padding: '4px 12px'
+                      }}
+                    >
+                      {isCouncil ? 'Council Member' : 'Student'}
+                    </Tag>
+                    <Tag 
+                      color={user?.approvalStatus === 'APPROVED' ? '#52c41a' : '#faad14'}
+                      style={{ 
+                        borderRadius: '20px',
+                        padding: '4px 12px',
+                        fontSize: '12px'
+                      }}
+                    >
+                      {user?.approvalStatus || 'PENDING'}
+                    </Tag>
+                  </Space>
+                </div>
+                
+                <Divider style={{ 
+                  background: `${COLORS.secondary}20`,
+                  margin: '16px 0'
+                }} />
+                
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <div style={{ 
+                      background: `${COLORS.background}80`,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.secondary}20`
+                    }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>Email</Text>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <MailOutlined style={{ color: COLORS.secondary }} />
+                        <Text style={{ color: COLORS.text, fontSize: '14px' }}>{user?.email}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                  
+                  <Col xs={24} sm={12} md={8}>
+                    <div style={{ 
+                      background: `${COLORS.background}80`,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.secondary}20`
+                    }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>Class</Text>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <BookOutlined style={{ color: COLORS.secondary }} />
+                        <Text style={{ color: COLORS.text, fontSize: '14px' }}>
+                          {user?.className || 'N/A'} {user?.department ? `(${user.department})` : ''}
+                        </Text>
+                      </div>
+                    </div>
+                  </Col>
+                  
+                  <Col xs={24} sm={12} md={8}>
+                    <div style={{ 
+                      background: `${COLORS.background}80`,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.secondary}20`
+                    }}>
+                      <Text type="secondary" style={{ fontSize: '12px' }}>Academic Year</Text>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                        <CalendarOutlined style={{ color: COLORS.secondary }} />
+                        <Text style={{ color: COLORS.text, fontSize: '14px' }}>{user?.academicYear || 'N/A'}</Text>
+                      </div>
+                    </div>
+                  </Col>
+                </Row>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Main Content */}
+        <Row gutter={[30, 30]}>
+          {/* Left Column - User Details */}
+          <Col xs={24} md={12}>
+            <Card
+              title="Profile Information"
+              style={{
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                borderRadius: '16px',
+                height: '100%'
+              }}
+              bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
+            >
+              <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                <div>
+                  <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                    Full Name
+                  </Text>
+                  <div style={{ 
+                    background: `${COLORS.background}80`,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${COLORS.secondary}20`
+                  }}>
+                    <Text style={{ color: COLORS.text, fontSize: '16px' }}>
+                      {user?.name || 'Not provided'}
+                    </Text>
+                  </div>
+                </div>
+                
+                {isCouncil && user?.councilPosition && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                      Council Position
+                    </Text>
+                    <div style={{ 
+                      background: `${COLORS.background}80`,
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: `1px solid ${COLORS.action}30`
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <TeamOutlined style={{ color: COLORS.action }} />
+                        <Text style={{ color: COLORS.text, fontSize: '16px' }}>
+                          {user.councilPosition.replace(/_/g, ' ') || 'Not specified'}
+                        </Text>
+                      </div>
+                    </div>
+                  </div>
                 )}
                 
-                <IconButton
-                  size="small"
-                  onClick={resetAvatarEdit}
-                  sx={{ 
-                    bgcolor: theme.palette.grey[500],
-                    color: 'white',
-                    '&:hover': { bgcolor: theme.palette.grey[700] }
-                  }}
-                  title="Cancel"
-                >
-                  <Close fontSize="small" />
-                </IconButton>
-              </Box>
-            )}
+                <div>
+                  <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                    Status
+                  </Text>
+                  <div style={{ 
+                    background: `${COLORS.background}80`,
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${COLORS.secondary}20`
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <CalendarOutlined style={{ 
+                          color: user?.onlineStatus === 'active' ? COLORS.secondary : '#f5222d'
+                        }} />
+                        <Text style={{ color: COLORS.text }}>
+                          {user?.onlineStatus === 'active' ? 'Online' : 'Offline'}
+                        </Text>
+                      </div>
+                      <Tag color={user?.onlineStatus === 'active' ? '#52c41a' : '#f5222d'} style={{ borderRadius: '20px' }}>
+                        {user?.onlineStatus?.toUpperCase() || 'OFFLINE'}
+                      </Tag>
+                    </div>
+                  </div>
+                </div>
+                
+                {user?.avatar && (
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+                      Avatar Actions
+                    </Text>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <Button 
+                        icon={<DeleteOutlined />}
+                        danger
+                        block
+                        size="large"
+                        onClick={() => setDeleteModalVisible(true)}
+                        loading={uploading}
+                        style={{ height: '40px' }}
+                      >
+                        Remove Avatar
+                      </Button>
+                    </Space>
+                  </div>
+                )}
+              </Space>
+            </Card>
+          </Col>
 
-            {!isEditingAvatar && !uploading && (
-              <IconButton
-                sx={{
-                  position: 'absolute',
-                  bottom: 5,
-                  right: 5,
-                  bgcolor: theme.palette.primary.main,
-                  color: 'white',
-                  '&:hover': { 
-                    bgcolor: theme.palette.primary.dark,
-                    transform: 'scale(1.1)'
-                  },
-                  width: 36,
-                  height: 36,
-                  transition: 'all 0.2s ease',
-                  boxShadow: theme.shadows[2]
-                }}
-                onClick={handleAvatarClick}
-                title="Edit avatar"
-              >
-                <Edit fontSize="small" />
-              </IconButton>
-            )}
-
-            {/* Hidden file input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: 'none' }}
-              accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
-              onChange={handleFileSelect}
-            />
-
-            {/* Upload Progress */}
-            {uploading && (
-              <Box sx={{ 
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                bgcolor: 'rgba(0,0,0,0.7)',
-                borderRadius: '50%'
-              }}>
-                <CircularProgress 
-                  variant={uploadProgress > 0 ? "determinate" : "indeterminate"}
-                  value={uploadProgress}
-                  size={60}
-                  sx={{ color: 'white' }}
-                />
-              </Box>
-            )}
-          </Box>
-
-          <Box>
-            <Typography 
-              variant="h2" 
-              fontWeight="bold"
-              sx={{ 
-                fontSize: { xs: '2rem', md: '2.5rem' },
-                mb: 0.5
+          {/* Right Column - 3D Model */}
+          <Col xs={24} md={12}>
+            <Card
+              title="Daily 3D Model"
+              style={{
+                background: COLORS.surface,
+                border: `1px solid ${COLORS.secondary}30`,
+                borderRadius: '16px',
+                height: '100%'
               }}
+              bodyStyle={{ padding: isMobile ? '16px' : '24px' }}
             >
-              Welcome, {user?.name?.split(' ')[0] || 'User'}
-            </Typography>
-            
-            {/* Role Badge */}
-            <Chip
-              icon={user?.role === 'STUDENT_COUNCIL' ? <Groups /> : <School />}
-              label={user?.role === 'STUDENT_COUNCIL' ? 'Council Member' : 'Student'}
-              color={user?.role === 'STUDENT_COUNCIL' ? 'secondary' : 'primary'}
-              sx={{ 
-                width: 'fit-content',
-                fontSize: '0.9rem',
-                py: 0.5
-              }}
-            />
-          </Box>
-        </Box>
-
-        {/* Preview and Confirm Section */}
-        {previewUrl && !uploading && (
-          <Box sx={{ 
-            mt: 2, 
-            p: 2, 
-            borderRadius: 2,
-            background: alpha(theme.palette.warning.light, 0.1),
-            border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`
-          }}>
-            <Typography variant="subtitle2" fontWeight="bold" color="warning.main" sx={{ mb: 1 }}>
-              Preview New Avatar
-            </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar 
-                src={previewUrl} 
-                sx={{ width: 60, height: 60 }}
-              />
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Click confirm to upload this as your new avatar
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-                  <Button
-                    size="small"
-                    variant="contained"
-                    color="primary"
-                    onClick={confirmUpload}
-                    startIcon={<Check />}
-                  >
-                    Confirm Upload
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="secondary"
-                    onClick={() => {
-                      setPreviewUrl(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                      }
-                    }}
-                    startIcon={<Close />}
-                  >
-                    Cancel
-                  </Button>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
-        )}
-
-        <Divider sx={{ my: 1 }} />
-
-        {/* User Details */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Person sx={{ color: theme.palette.primary.main }} />
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Full Name
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {user?.name}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Email sx={{ color: theme.palette.primary.main }} />
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Email
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {user?.email}
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <ClassIcon sx={{ color: theme.palette.primary.main }} />
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Class
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {user?.className} ({user?.department})
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <CalendarToday sx={{ color: theme.palette.primary.main }} />
-            <Box>
-              <Typography variant="body2" color="text.secondary">
-                Academic Year
-              </Typography>
-              <Typography variant="body1" fontWeight="medium">
-                {user?.academicYear}
-              </Typography>
-            </Box>
-          </Box>
-
-          {user?.role === 'STUDENT_COUNCIL' && user?.councilPosition && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Star sx={{ color: theme.palette.primary.main }} />
-              <Box>
-                <Typography variant="body2" color="text.primary">
-                  Council Position
-                </Typography>
-                <Typography variant="body1" fontWeight="medium" color="text.secondary">
-                  {user.councilPosition?.replace(/_/g, ' ')}
-                </Typography>
-              </Box>
-            </Box>
-          )}
-        </Box>
-
-        {/* Status Info */}
-        <Box sx={{ 
-          mt: 2, 
-          p: 2, 
-          borderRadius: 2,
-          background: alpha(theme.palette.primary.main, 0.05),
-          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`
-        }}>
-          <Typography variant="body2" color="text.secondary">
-            Status: <span style={{ 
-              color: user?.approvalStatus === 'APPROVED' ? theme.palette.success.main : theme.palette.warning.main,
-              fontWeight: 'bold'
-            }}>
-              {user?.approvalStatus}
-            </span>
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Online: <span style={{ 
-              color: user?.onlineStatus === 'active' ? theme.palette.success.main : theme.palette.text.secondary,
-              fontWeight: 'bold'
-            }}>
-              {user?.onlineStatus?.toUpperCase()}
-            </span>
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* Right side - 3D Checklist Model */}
-      <Box sx={{ 
-        flex: 1,
-        maxWidth: 500,
-        height: 400
-      }}>
-        <Box sx={{ 
-          height: '100%',
-          borderRadius: 2,
-          overflow: 'hidden',
-          boxShadow: theme.shadows[3]
-        }}>
-          {selectedModel ? (
-            <>
-              <Suspense fallback={<ThreeLoader />}>
-                <Canvas camera={{ position: [0, 2, 5], fov: 50 }}>
-                  <ambientLight intensity={0.6} />
-                  <directionalLight position={[5, 5, 5]} intensity={1} />
-                  <pointLight position={[-5, -5, -5]} intensity={0.5} />
-                  
-                  <Suspense fallback={null}>
-                    <ChecklistModel url={selectedModel.url}/>
-                  </Suspense>
-                  
-                  <OrbitControls 
-                    enableZoom={true}
-                    enablePan={true}
-                    maxPolarAngle={Math.PI}
-                    minPolarAngle={0}
-                    autoRotate
-                    autoRotateSpeed={0.5}
-                    enableDamping
-                    dampingFactor={0.05}
+              {selectedModel ? (
+                <>
+                  <ModelViewer 
+                    modelUrl={selectedModel.url}
+                    description={selectedModel.description}
                   />
                   
-                  <Environment preset="city" />
-                </Canvas>
-              </Suspense>
-              <Box sx={{ 
-                p: 2, 
-                textAlign: 'center',
-                borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                background: alpha(theme.palette.background.paper, 0.8)
-              }}>
-                <Typography variant="caption" color="text.secondary">
-                  Drag to rotate • Scroll to zoom
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1, fontWeight: 'medium', color: theme.palette.primary.main }}>
-                  {selectedModel.description}
-                </Typography>
-              </Box>
-            </>
-          ) : (
-            <ThreeLoader />
-          )}
-        </Box>
-      </Box>
+                  <Divider style={{ 
+                    background: `${COLORS.secondary}20`,
+                    margin: '16px 0'
+                  }} />
+                  
+                  <Text style={{ 
+                    color: COLORS.text, 
+                    fontSize: '14px',
+                    display: 'block',
+                    textAlign: 'center',
+                    marginTop: '16px'
+                  }}>
+                    {selectedModel.description}
+                  </Text>
+                </>
+              ) : (
+                <ThreeLoader />
+              )}
+            </Card>
+          </Col>
+        </Row>
+      </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogTitle>Remove Avatar</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to remove your profile picture? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
+      {/* Delete Avatar Modal */}
+      <Modal
+        title="Remove Avatar"
+        open={deleteModalVisible}
+        onCancel={() => !uploading && setDeleteModalVisible(false)}
+        footer={[
           <Button 
-            onClick={() => setDeleteDialogOpen(false)}
-            color="inherit"
+            key="cancel" 
+            onClick={() => setDeleteModalVisible(false)}
             disabled={uploading}
           >
             Cancel
-          </Button>
+          </Button>,
           <Button 
+            key="delete" 
+            type="primary" 
+            danger
             onClick={handleDeleteAvatar}
-            color="error"
-            variant="contained"
-            disabled={uploading}
-            startIcon={uploading ? <CircularProgress size={16} /> : <Delete />}
+            loading={uploading}
+            icon={uploading ? <LoadingOutlined /> : <DeleteOutlined />}
           >
             {uploading ? 'Removing...' : 'Remove Avatar'}
           </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        ]}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+        <Alert
+          message="Warning"
+          description="Are you sure you want to remove your profile picture? This action cannot be undone."
+          type="warning"
+          showIcon
+          style={{ marginBottom: '20px' }}
+        />
+      </Modal>
+
+      {/* Avatar Preview Modal */}
+      <Modal
+        open={previewVisible}
+        title="Avatar Preview"
+        footer={[
+          <Button 
+            key="cancel" 
+            onClick={() => setPreviewVisible(false)}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>,
+          <Button 
+            key="upload" 
+            type="primary"
+            onClick={confirmUpload}
+            loading={uploading}
+            icon={uploading ? <LoadingOutlined /> : <CheckCircleOutlined />}
+          >
+            {uploading ? 'Uploading...' : 'Upload Avatar'}
+          </Button>
+        ]}
+        onCancel={() => !uploading && setPreviewVisible(false)}
+      >
+        <div style={{ textAlign: 'center', padding: '20px 0' }}>
+          <Avatar
+            size={160}
+            src={previewImage}
+            style={{ marginBottom: '20px' }}
+          />
+          <Text type="secondary">
+            This will replace your current profile picture
+          </Text>
+        </div>
+      </Modal>
+
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept="image/jpeg,image/png,image/jpg,image/gif,image/webp"
+        onChange={handleFileSelect}
+      />
+    </div>
   );
-}
+};
+
+export default UserHomepage;

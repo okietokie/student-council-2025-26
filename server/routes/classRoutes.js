@@ -6,4 +6,6 @@ const router = express.Router();
 
 router.get('', classes.getClasses);
 router.get('/get-polls', classes.getLatestPolls);
+router.get("/stats", classes.getActiveStats);
+
 export default router;
