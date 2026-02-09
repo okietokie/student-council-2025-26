@@ -147,7 +147,7 @@ const Announcements = () => {
         </Paragraph>
         <Button
           type="default"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/auth')}
           style={{ 
             borderColor: COLORS.secondary,
             color: COLORS.secondary,
@@ -306,7 +306,7 @@ const Announcements = () => {
                         <Button
                           type="primary"
                           icon={<ArrowRightOutlined />}
-                          onClick={() => navigate('/')}
+                          onClick={() => navigate('/auth')}
                           style={{
                             background: COLORS.action,
                             border: 'none',
@@ -488,7 +488,7 @@ const Announcements = () => {
         <Button
           type="primary"
           icon={<CheckSquareOutlined />}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/auth')}
           size="large"
           style={{
             background: `linear-gradient(135deg, ${COLORS.action}, #D22728)`,
