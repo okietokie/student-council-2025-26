@@ -53,7 +53,7 @@ export default function Peers() {
     const userString = localStorage.getItem("user");
     const user = userString ? JSON.parse(userString) : null;
     
-    if (!user || user.role !== "STUDENT_COUNCIL") {
+    if (!user || user?.role !== "STUDENT_COUNCIL") {
       navigate('/logged-in/403');
     }
   }, [navigate]);
